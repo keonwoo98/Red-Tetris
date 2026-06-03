@@ -1,0 +1,190 @@
+import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { WritableDraft } from 'immer';
+import { pieceAt } from '@shared/rng';
+import type { ActivePiece, Board, PieceType } from '@shared/types';
+import {
+  addPenaltyLines,
+  clearLines,
+  collides,
+  createBoard,
+  hardDrop as engineHardDrop,
+  isGrounded,
+  lockPiece,
+  lockStep,
+  moveDown,
+  moveLeft as engineMoveLeft,
+  moveRight as engineMoveRight,
+  nextQueue,
+  rotate,
+  spawnPiece,
+} from '../engine';
+
+export interface GameState {
+  seed: number | null;
+  board: Board;
+  current: ActivePiece | null;
+  pieceIndex: number;
+  next: PieceType[];
+  status: 'idle' | 'playing' | 'gameover';
+  wasGroundedLastFrame: boolean;
+  pendingPenalty: number;
+  lockEvent: { board: Board; cleared: number; pieceIndex: number } | null;
+  softDropActive: boolean;
+  alive: boolean;
+  winnerId: string | null;
+}
+
+const freshState = (): GameState => ({
+  seed: null,
+  board: createBoard(),
+  current: null,
+  pieceIndex: 0,
+  next: [],
+  status: 'idle',
+  wasGroundedLastFrame: false,
+  pendingPenalty: 0,
+  lockEvent: null,
+  softDropActive: false,
+  alive: true,
+  winnerId: null,
+});
+
+type Draft = WritableDraft<GameState>;
+
+const playable = (s: Draft): boolean => s.status === 'playing' && s.alive && s.current !== null;
+
+/** After a move/rotate, re-arm the lock delay if the piece is no longer grounded. */
+const reArm = (s: Draft): void => {
+  if (s.current && !isGrounded(s.board as Board, s.current as ActivePiece)) {
+    s.wasGroundedLastFrame = false;
+  }
+};
+
+const topOut = (s: Draft): void => {
+  s.status = 'gameover';
+  s.alive = false;
+  s.current = null;
+};
+
+/** Lock the current piece into the board, flushing pending penalty first, then spawn the next. */
+const commitLock = (s: Draft): void => {
+  if (s.current === null || s.seed === null) return;
+
+  // 1. flush queued penalty BEFORE locking so the piece sees the shifted stack
+  if (s.pendingPenalty > 0) {
+    const { board, toppedOut } = addPenaltyLines(s.board as Board, s.pendingPenalty);
+    s.board = board;
+    s.pendingPenalty = 0;
+    if (toppedOut || collides(board, s.current as ActivePiece)) {
+      s.lockEvent = { board, cleared: 0, pieceIndex: s.pieceIndex };
+      topOut(s);
+      return;
+    }
+  }
+
+  // 2. lock + clear
+  const locked = lockPiece(s.board as Board, s.current as ActivePiece);
+  const { board: cleared, cleared: n } = clearLines(locked);
+  s.board = cleared;
+  s.pieceIndex += 1;
+  s.lockEvent = { board: cleared, cleared: n, pieceIndex: s.pieceIndex };
+
+  // 3. spawn the next piece (deterministic); top out if it cannot enter
+  const nextPiece = spawnPiece(pieceAt(s.seed, s.pieceIndex));
+  s.next = nextQueue(s.seed, s.pieceIndex + 1, 1);
+  if (collides(cleared, nextPiece)) {
+    topOut(s);
+    return;
+  }
+  s.current = nextPiece;
+  s.wasGroundedLastFrame = false;
+};
+
+const gameSlice = createSlice({
+  name: 'game',
+  initialState: freshState(),
+  reducers: {
+    startGame(s, a: PayloadAction<{ seed: number }>) {
+      const fresh = freshState();
+      Object.assign(s, fresh);
+      s.seed = a.payload.seed;
+      s.status = 'playing';
+      s.current = spawnPiece(pieceAt(a.payload.seed, 0));
+      s.next = nextQueue(a.payload.seed, 1, 1);
+      if (collides(s.board as Board, s.current as ActivePiece)) topOut(s);
+    },
+    moveLeft(s) {
+      if (playable(s)) {
+        s.current = engineMoveLeft(s.board as Board, s.current as ActivePiece);
+        reArm(s);
+      }
+    },
+    moveRight(s) {
+      if (playable(s)) {
+        s.current = engineMoveRight(s.board as Board, s.current as ActivePiece);
+        reArm(s);
+      }
+    },
+    rotateCW(s) {
+      if (playable(s)) {
+        s.current = rotate(s.board as Board, s.current as ActivePiece);
+        reArm(s);
+      }
+    },
+    softDrop(s) {
+      if (playable(s)) {
+        s.current = moveDown(s.board as Board, s.current as ActivePiece);
+        reArm(s);
+      }
+    },
+    hardDrop(s) {
+      if (playable(s)) {
+        s.current = engineHardDrop(s.board as Board, s.current as ActivePiece);
+        commitLock(s);
+      }
+    },
+    setSoftDrop(s, a: PayloadAction<boolean>) {
+      s.softDropActive = a.payload;
+    },
+    tick(s) {
+      if (!playable(s)) return;
+      const out = lockStep(s.board as Board, {
+        piece: s.current as ActivePiece,
+        wasGroundedLastFrame: s.wasGroundedLastFrame,
+      });
+      if (out.kind === 'lock') {
+        commitLock(s);
+      } else {
+        s.current = out.state.piece;
+        s.wasGroundedLastFrame = out.state.wasGroundedLastFrame;
+      }
+    },
+    applyPenalty(s, a: PayloadAction<{ n: number }>) {
+      if (s.status !== 'playing') return;
+      s.pendingPenalty += a.payload.n;
+      // flush immediately if we are between pieces (no current to lock against)
+      if (s.current === null) {
+        const { board, toppedOut } = addPenaltyLines(s.board as Board, s.pendingPenalty);
+        s.board = board;
+        s.pendingPenalty = 0;
+        if (toppedOut) topOut(s);
+      }
+    },
+    clearLockEvent(s) {
+      s.lockEvent = null;
+    },
+    topOut(s) {
+      topOut(s);
+    },
+    gameOver(s, a: PayloadAction<{ winnerId: string | null }>) {
+      s.winnerId = a.payload.winnerId;
+      s.status = 'gameover';
+    },
+    resetGame() {
+      return freshState();
+    },
+  },
+});
+
+export const gameActions = gameSlice.actions;
+export default gameSlice.reducer;
