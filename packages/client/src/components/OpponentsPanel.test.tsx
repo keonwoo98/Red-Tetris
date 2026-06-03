@@ -12,8 +12,8 @@ describe('<OpponentSpectrum>', () => {
       />,
     );
     expect(getByText('bob')).toBeInTheDocument();
-    const bars = container.querySelectorAll('[role="img"] > div');
-    expect(bars).toHaveLength(10);
+    const cols = container.querySelectorAll('[data-zone]');
+    expect(cols).toHaveLength(10);
   });
 });
 
