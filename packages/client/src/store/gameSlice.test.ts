@@ -114,6 +114,14 @@ describe('applyPenalty', () => {
     expect(reducer(playing(), gameActions.applyPenalty({ n: 2 })).pendingPenalty).toBe(2);
   });
 
+  it('records the incoming attacker in lastAttack', () => {
+    const after = reducer(
+      playing(),
+      gameActions.applyPenalty({ n: 2, fromId: 'x', fromName: 'rook' }),
+    );
+    expect(after.lastAttack).toMatchObject({ fromId: 'x', fromName: 'rook', count: 2 });
+  });
+
   it('flushes immediately between pieces', () => {
     const after = reducer(playing({ current: null }), gameActions.applyPenalty({ n: 2 }));
     expect(after.pendingPenalty).toBe(0);

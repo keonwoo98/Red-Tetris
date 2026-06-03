@@ -29,10 +29,12 @@ describe('opponentsSlice', () => {
     expect(s.byId.z!.spectrum[9]).toBe(10);
   });
 
-  it('opponentGameOver flips alive', () => {
+  it('opponentGameOver flips alive, bumps koSeq, records placement', () => {
     let s = reducer(init(), opponentsActions.setOpponents([opp('a')]));
     s = reducer(s, opponentsActions.opponentGameOver({ id: 'a' }));
     expect(s.byId.a!.alive).toBe(false);
+    expect(s.byId.a!.koSeq).toBe(1);
+    expect(s.placementOrder).toEqual(['a']);
   });
 
   it('opponentLeft removes and clearOpponents resets', () => {

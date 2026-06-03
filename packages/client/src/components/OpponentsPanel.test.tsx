@@ -8,7 +8,7 @@ describe('<OpponentSpectrum>', () => {
   it('renders the name and 10 spectrum bars', () => {
     const { getByText, container } = render(
       <OpponentSpectrum
-        opp={{ id: 'a', name: 'bob', alive: true, spectrum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }}
+        opp={{ id: 'a', name: 'bob', alive: true, spectrum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], koSeq: 0 }}
       />,
     );
     expect(getByText('bob')).toBeInTheDocument();

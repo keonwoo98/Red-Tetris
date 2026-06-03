@@ -2,24 +2,34 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { OpponentDTO } from '@shared/protocol';
 import type { Spectrum } from '@shared/types';
 
-export interface OpponentsState {
-  byId: Record<string, OpponentDTO>;
-  ids: string[];
+/** Opponent plus client-only render state (KO animation trigger). */
+export interface OpponentView extends OpponentDTO {
+  koSeq: number;
 }
 
-const initialState: OpponentsState = { byId: {}, ids: [] };
+export interface OpponentsState {
+  byId: Record<string, OpponentView>;
+  ids: string[];
+  placementOrder: string[]; // elimination order: first eliminated first, survivors appended at game over
+}
+
+const initialState: OpponentsState = { byId: {}, ids: [], placementOrder: [] };
 
 const opponentsSlice = createSlice({
   name: 'opponents',
   initialState,
   reducers: {
-    // Replace the roster but PRESERVE any spectrum we already have (room:state carries no spectrum).
+    // Replace the roster but PRESERVE spectrum + koSeq (room:state carries no spectrum).
     setOpponents(s, a: PayloadAction<OpponentDTO[]>) {
-      const next: Record<string, OpponentDTO> = {};
+      const next: Record<string, OpponentView> = {};
       const ids: string[] = [];
       for (const o of a.payload) {
         const prev = s.byId[o.id];
-        next[o.id] = { ...o, spectrum: prev ? prev.spectrum : o.spectrum };
+        next[o.id] = {
+          ...o,
+          spectrum: prev ? prev.spectrum : o.spectrum,
+          koSeq: prev ? prev.koSeq : 0,
+        };
         ids.push(o.id);
       }
       s.byId = next;
@@ -29,12 +39,22 @@ const opponentsSlice = createSlice({
     spectrumUpdate(s, a: PayloadAction<{ id: string; name: string; spectrum: Spectrum }>) {
       const { id, name, spectrum } = a.payload;
       const prev = s.byId[id];
-      s.byId[id] = { id, name, alive: prev ? prev.alive : true, spectrum };
+      s.byId[id] = {
+        id,
+        name,
+        alive: prev ? prev.alive : true,
+        spectrum,
+        koSeq: prev ? prev.koSeq : 0,
+      };
       if (!s.ids.includes(id)) s.ids.push(id);
     },
     opponentGameOver(s, a: PayloadAction<{ id: string }>) {
       const o = s.byId[a.payload.id];
-      if (o) o.alive = false;
+      if (o && o.alive) {
+        o.alive = false;
+        o.koSeq += 1; // triggers the KO crumble + stamp
+        if (!s.placementOrder.includes(a.payload.id)) s.placementOrder.push(a.payload.id);
+      }
     },
     opponentLeft(s, a: PayloadAction<{ id: string }>) {
       delete s.byId[a.payload.id];

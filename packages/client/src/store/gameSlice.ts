@@ -44,6 +44,8 @@ export interface GameState {
   // render-only: hard-drop impact (shake amplitude) and freshly-locked cells (flash)
   dropFx: { seq: number; amp: number } | null;
   lockFx: { seq: number; cells: [number, number][] } | null;
+  // render-only: the most recent incoming attack (who hit me, how hard)
+  lastAttack: { fromId: string | null; fromName: string | null; count: number; seq: number } | null;
   // hold slot: stash a piece; one hold per drop (re-armed on lock)
   hold: PieceType | null;
   canHold: boolean;
@@ -69,6 +71,7 @@ const freshState = (): GameState => ({
   clearFx: null,
   dropFx: null,
   lockFx: null,
+  lastAttack: null,
   hold: null,
   canHold: true,
 });
@@ -224,9 +227,15 @@ const gameSlice = createSlice({
         s.wasGroundedLastFrame = out.state.wasGroundedLastFrame;
       }
     },
-    applyPenalty(s, a: PayloadAction<{ n: number }>) {
+    applyPenalty(s, a: PayloadAction<{ n: number; fromId?: string; fromName?: string }>) {
       if (s.status !== 'playing') return;
       s.pendingPenalty += a.payload.n;
+      s.lastAttack = {
+        fromId: a.payload.fromId ?? null,
+        fromName: a.payload.fromName ?? null,
+        count: a.payload.n,
+        seq: (s.lastAttack?.seq ?? 0) + 1,
+      };
       // flush immediately if we are between pieces (no current to lock against)
       if (s.current === null) {
         const { board, toppedOut } = addPenaltyLines(s.board as Board, s.pendingPenalty);

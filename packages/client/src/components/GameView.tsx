@@ -2,10 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/redux';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { useKeyboard } from '../hooks/useKeyboard';
-import { selectGameStatus, selectIsAlive, selectOpponents } from '../store/selectors';
+import { selectClearFx, selectGameStatus, selectIsAlive, selectOpponents } from '../store/selectors';
 import { Board } from './Board';
 import { Controls } from './Controls';
 import { GameOverOverlay } from './GameOverOverlay';
+import { GarbageMeter } from './GarbageMeter';
 import { HoldPiece } from './HoldPiece';
 import { NextQueue } from './NextQueue';
 import { OpponentsPanel } from './OpponentsPanel';
@@ -17,6 +18,7 @@ export const GameView = () => {
   const alive = useAppSelector(selectIsAlive);
   const opponents = useAppSelector(selectOpponents);
   const room = useAppSelector((s) => s.lobby.room);
+  const clearFx = useAppSelector(selectClearFx);
   const navigate = useNavigate();
 
   useGameLoop();
@@ -51,7 +53,13 @@ export const GameView = () => {
           <ScoreHUD />
         </aside>
         <section className={styles.center}>
+          <GarbageMeter />
           <Board />
+          {clearFx && clearFx.lines >= 2 && (
+            <div key={clearFx.seq} className={styles.sent}>
+              SENT {clearFx.lines - 1} →
+            </div>
+          )}
         </section>
         <aside className={styles.rightRail}>
           <NextQueue />

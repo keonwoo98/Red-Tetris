@@ -1,7 +1,7 @@
 import { createSelector } from '@reduxjs/toolkit';
-import type { OpponentDTO } from '@shared/protocol';
 import { computeSpectrum } from '../engine';
 import type { RootState } from './index';
+import type { OpponentView } from './opponentsSlice';
 
 export const selectIsHost = (s: RootState): boolean =>
   !!s.lobby.myId && s.lobby.myId === s.lobby.hostId;
@@ -31,9 +31,12 @@ export const selectNearTopOut = createSelector(
   (s: RootState) => s.game.board,
   (board) => Math.max(0, ...computeSpectrum(board)) >= 16,
 );
+export const selectPendingPenalty = (s: RootState): number => s.game.pendingPenalty;
+export const selectLastAttack = (s: RootState) => s.game.lastAttack;
+export const selectPlacementOrder = (s: RootState) => s.opponents.placementOrder;
 
 export const selectOpponents = createSelector(
   (s: RootState) => s.opponents.ids,
   (s: RootState) => s.opponents.byId,
-  (ids, byId): OpponentDTO[] => ids.map((id) => byId[id]).filter((o): o is OpponentDTO => Boolean(o)),
+  (ids, byId): OpponentView[] => ids.map((id) => byId[id]).filter((o): o is OpponentView => Boolean(o)),
 );

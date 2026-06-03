@@ -1,0 +1,57 @@
+.meter {
+  position: absolute;
+  left: -16px;
+  top: 12px;
+  bottom: 12px;
+  width: 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.count {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.56rem;
+  letter-spacing: 0.06em;
+  color: var(--danger);
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.segments {
+  flex: 1;
+  width: 9px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+.seg {
+  width: 100%;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--caution);
+  animation: pulseWarn 720ms ease-in-out infinite;
+}
+
+.meter[data-sev='high'] .seg {
+  background: var(--warn);
+}
+.meter[data-sev='crit'] .seg {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+  animation-duration: 440ms;
+}
+
+@keyframes pulseWarn {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
