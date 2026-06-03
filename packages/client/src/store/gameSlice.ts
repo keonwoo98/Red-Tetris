@@ -40,6 +40,9 @@ export interface GameState {
   mode: GameMode;
   // render-only: bumps `seq` each time lines clear so the board can replay a flash
   clearFx: { lines: number; seq: number } | null;
+  // hold slot: stash a piece; one hold per drop (re-armed on lock)
+  hold: PieceType | null;
+  canHold: boolean;
 }
 
 const freshState = (): GameState => ({
@@ -60,6 +63,8 @@ const freshState = (): GameState => ({
   level: 1,
   mode: 'classic',
   clearFx: null,
+  hold: null,
+  canHold: true,
 });
 
 type Draft = WritableDraft<GameState>;
@@ -117,6 +122,7 @@ const commitLock = (s: Draft): void => {
   }
   s.current = nextPiece;
   s.wasGroundedLastFrame = false;
+  s.canHold = true; // re-arm hold for the new piece
 };
 
 const gameSlice = createSlice({
@@ -168,6 +174,30 @@ const gameSlice = createSlice({
     },
     setSoftDrop(s, a: PayloadAction<boolean>) {
       s.softDropActive = a.payload;
+    },
+    holdPiece(s) {
+      if (!playable(s) || !s.canHold || s.seed === null) return;
+      const currentType = (s.current as ActivePiece).type;
+      if (s.hold === null) {
+        // stash current, pull the next piece from the deterministic stream
+        s.hold = currentType;
+        s.pieceIndex += 1;
+        const nextPiece = spawnPiece(pieceAt(s.seed, s.pieceIndex));
+        s.next = nextQueue(s.seed, s.pieceIndex + 1, 1);
+        if (collides(s.board as Board, nextPiece)) {
+          topOut(s);
+          return;
+        }
+        s.current = nextPiece;
+      } else {
+        // swap current with the held piece (no stream advance)
+        const swapped = spawnPiece(s.hold);
+        if (collides(s.board as Board, swapped)) return; // blocked — keep current
+        s.hold = currentType;
+        s.current = swapped;
+      }
+      s.canHold = false;
+      s.wasGroundedLastFrame = false;
     },
     tick(s) {
       if (!playable(s)) return;

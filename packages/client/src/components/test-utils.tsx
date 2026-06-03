@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { render } from '@testing-library/react';
 import type { ReactElement } from 'react';
 import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router-dom';
 import gameReducer from '../store/gameSlice';
 import lobbyReducer from '../store/lobbySlice';
 import opponentsReducer from '../store/opponentsSlice';
@@ -17,5 +18,9 @@ export type TestStore = ReturnType<typeof makeStore>;
 
 export const renderWith = (ui: ReactElement, store: TestStore = makeStore()) => ({
   store,
-  ...render(<Provider store={store}>{ui}</Provider>),
+  ...render(
+    <Provider store={store}>
+      <MemoryRouter>{ui}</MemoryRouter>
+    </Provider>,
+  ),
 });

@@ -180,3 +180,29 @@ describe('game modes (bonus)', () => {
     expect(reducer(init(), gameActions.startGame({ seed: 1 })).mode).toBe('classic');
   });
 });
+
+describe('hold', () => {
+  it('stashes the current piece and advances to the next when empty', () => {
+    const after = reducer(playing(), gameActions.holdPiece());
+    expect(after.hold).toBe(pieceAt(42, 0));
+    expect(after.current!.type).toBe(pieceAt(42, 1));
+    expect(after.canHold).toBe(false);
+  });
+
+  it('cannot hold twice before a lock', () => {
+    const once = reducer(playing(), gameActions.holdPiece());
+    const twice = reducer(once, gameActions.holdPiece());
+    expect(twice.current).toEqual(once.current);
+  });
+
+  it('re-arms hold after a lock', () => {
+    expect(reducer(playing(), gameActions.hardDrop()).canHold).toBe(true);
+  });
+
+  it('startGame resets the hold slot', () => {
+    const held = reducer(playing(), gameActions.holdPiece());
+    const fresh = reducer(held, gameActions.startGame({ seed: 1 }));
+    expect(fresh.hold).toBeNull();
+    expect(fresh.canHold).toBe(true);
+  });
+});

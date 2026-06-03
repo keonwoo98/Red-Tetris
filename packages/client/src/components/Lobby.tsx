@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { FEATURES, type GameMode } from '@shared/constants';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { lobbyActions } from '../store/lobbySlice';
@@ -14,6 +15,7 @@ export const Lobby = () => {
   const mode = useAppSelector(selectLobbyMode);
   const room = useAppSelector((s) => s.lobby.room);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
   return (
     <main className={styles.lobby}>
@@ -53,6 +55,9 @@ export const Lobby = () => {
             waiting for the host to start…
           </div>
         )}
+        <button className={styles.leave} type="button" onClick={() => navigate('/')}>
+          ← leave room
+        </button>
       </div>
     </main>
   );

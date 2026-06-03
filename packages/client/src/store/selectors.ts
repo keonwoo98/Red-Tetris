@@ -21,6 +21,8 @@ export const selectScore = (s: RootState): number => s.game.score;
 export const selectLines = (s: RootState): number => s.game.lines;
 export const selectLevel = (s: RootState): number => s.game.level;
 export const selectGameMode = (s: RootState) => s.game.mode;
+export const selectHold = (s: RootState) => s.game.hold;
+export const selectCanHold = (s: RootState): boolean => s.game.canHold;
 
 export const selectOpponents = createSelector(
   (s: RootState) => s.opponents.ids,

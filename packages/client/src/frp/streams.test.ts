@@ -9,6 +9,9 @@ describe('keyToIntent', () => {
     expect(keyToIntent('down', 'ArrowDown')).toBe('soft-start');
     expect(keyToIntent('down', ' ')).toBe('hard');
     expect(keyToIntent('down', 'Spacebar')).toBe('hard');
+    expect(keyToIntent('down', 'c')).toBe('hold');
+    expect(keyToIntent('down', 'C')).toBe('hold');
+    expect(keyToIntent('down', 'Shift')).toBe('hold');
     expect(keyToIntent('down', 'k')).toBeNull();
   });
 

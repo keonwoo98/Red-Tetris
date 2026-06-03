@@ -23,6 +23,10 @@ export const Controls = () => (
         <kbd className={styles.space}>space</kbd>
         <span className={styles.act}>hard drop</span>
       </li>
+      <li>
+        <kbd>C</kbd>
+        <span className={styles.act}>hold</span>
+      </li>
     </ul>
   </div>
 );

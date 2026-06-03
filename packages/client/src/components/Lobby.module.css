@@ -183,6 +183,22 @@
   animation: blink 1.1s ease-in-out infinite;
 }
 
+.leave {
+  align-self: center;
+  margin-top: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.74rem;
+  color: var(--ink-faint);
+  background: transparent;
+  border: none;
+  padding: 6px 10px;
+  transition: color 140ms ease;
+}
+
+.leave:hover {
+  color: var(--ink);
+}
+
 @keyframes blink {
   0%,
   100% {

@@ -48,6 +48,9 @@ export const useKeyboard = (enabled: boolean): void => {
         case 'hard':
           dispatch(gameActions.hardDrop());
           break;
+        case 'hold':
+          dispatch(gameActions.holdPiece());
+          break;
         default:
           break;
       }

@@ -3,7 +3,14 @@ import flyd, { type Stream } from 'flyd';
 // Functional Reactive Programming (bonus): model input + gravity as flyd streams.
 // The pure game engine is untouched — these streams only feed it.
 
-export type InputIntent = 'left' | 'right' | 'rotate' | 'soft-start' | 'soft-end' | 'hard';
+export type InputIntent =
+  | 'left'
+  | 'right'
+  | 'rotate'
+  | 'soft-start'
+  | 'soft-end'
+  | 'hard'
+  | 'hold';
 
 /** PURE: map a key event phase + key to an input intent (or null). */
 export const keyToIntent = (phase: 'down' | 'up', key: string): InputIntent | null => {
@@ -20,6 +27,10 @@ export const keyToIntent = (phase: 'down' | 'up', key: string): InputIntent | nu
       case ' ':
       case 'Spacebar':
         return 'hard';
+      case 'c':
+      case 'C':
+      case 'Shift':
+        return 'hold';
       default:
         return null;
     }
