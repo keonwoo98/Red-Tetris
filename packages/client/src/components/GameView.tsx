@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/redux';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { useKeyboard } from '../hooks/useKeyboard';
-import { selectGameStatus, selectIsAlive } from '../store/selectors';
+import { selectGameStatus, selectIsAlive, selectOpponents } from '../store/selectors';
 import { Board } from './Board';
 import { Controls } from './Controls';
 import { GameOverOverlay } from './GameOverOverlay';
@@ -15,11 +15,15 @@ import styles from './GameView.module.css';
 export const GameView = () => {
   const status = useAppSelector(selectGameStatus);
   const alive = useAppSelector(selectIsAlive);
+  const opponents = useAppSelector(selectOpponents);
   const room = useAppSelector((s) => s.lobby.room);
   const navigate = useNavigate();
 
   useGameLoop();
   useKeyboard(alive && status === 'playing');
+
+  const aliveCount = opponents.filter((o) => o.alive).length + (alive ? 1 : 0);
+  const total = opponents.length + 1;
 
   return (
     <main className={styles.view}>
@@ -28,6 +32,11 @@ export const GameView = () => {
           RED<b>TETRIS</b>
         </span>
         <span className={styles.room}>{room}</span>
+        {total > 1 && (
+          <span className={styles.alive}>
+            ALIVE <b>{aliveCount}</b>/{total}
+          </span>
+        )}
         <span className={styles.state} data-state={status}>
           {status === 'playing' ? '● live' : status === 'gameover' ? '○ over' : '· idle'}
         </span>
@@ -35,20 +44,26 @@ export const GameView = () => {
           LEAVE
         </button>
       </header>
+
       <div className={styles.grid}>
-        <section className={styles.stage}>
+        <aside className={styles.leftRail}>
+          <HoldPiece />
+          <ScoreHUD />
+        </aside>
+        <section className={styles.center}>
           <Board />
         </section>
-        <aside className={styles.side}>
-          <ScoreHUD />
-          <div className={styles.pieces}>
-            <HoldPiece />
-            <NextQueue />
-          </div>
-          <Controls />
+        <aside className={styles.rightRail}>
+          <NextQueue />
           <OpponentsPanel />
         </aside>
       </div>
+
+      <details className={styles.controlsFoot}>
+        <summary>CONTROLS</summary>
+        <Controls />
+      </details>
+
       {status === 'gameover' && <GameOverOverlay />}
     </main>
   );

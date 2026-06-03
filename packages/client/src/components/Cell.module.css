@@ -43,42 +43,42 @@
 .c1 {
   background: var(--c1);
   box-shadow:
-    0 0 11px -1px var(--c1),
+    0 0 4px -1px var(--c1),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 .c2 {
   background: var(--c2);
   box-shadow:
-    0 0 11px -1px var(--c2),
+    0 0 4px -1px var(--c2),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 .c3 {
   background: var(--c3);
   box-shadow:
-    0 0 11px -1px var(--c3),
+    0 0 4px -1px var(--c3),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 .c4 {
   background: var(--c4);
   box-shadow:
-    0 0 11px -1px var(--c4),
+    0 0 4px -1px var(--c4),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 .c5 {
   background: var(--c5);
   box-shadow:
-    0 0 12px -1px var(--c5),
+    0 0 5px -1px var(--c5),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 .c6 {
   background: var(--c6);
   box-shadow:
-    0 0 11px -1px var(--c6),
+    0 0 4px -1px var(--c6),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
 .c7 {
   background: var(--c7);
   box-shadow:
-    0 0 11px -1px var(--c7),
+    0 0 4px -1px var(--c7),
     inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }

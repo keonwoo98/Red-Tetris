@@ -9,21 +9,26 @@ export const ScoreHUD = () => {
   const level = useAppSelector(selectLevel);
   if (!FEATURES.SCORING) return null;
 
+  const intoLevel = lines % 10; // 0..9 lines into the current level
+
   return (
     <div className={styles.hud}>
-      <div className={styles.score}>
-        <span className={styles.k}>SCORE</span>
-        <span className={styles.big}>{score.toLocaleString()}</span>
-      </div>
-      <div className={styles.row}>
+      <div className={styles.primary}>
         <div className={styles.stat}>
           <span className={styles.k}>LINES</span>
-          <span className={styles.v}>{lines}</span>
+          <span className={styles.big}>{lines}</span>
         </div>
         <div className={styles.stat}>
           <span className={styles.k}>LEVEL</span>
-          <span className={styles.v}>{level}</span>
+          <span className={styles.big}>{level}</span>
         </div>
+      </div>
+      <div className={styles.toNext} aria-hidden>
+        <div className={styles.toNextFill} style={{ width: `${intoLevel * 10}%` }} />
+      </div>
+      <div className={styles.score}>
+        <span className={styles.k}>SCORE</span>
+        <span className={styles.scoreV}>{score.toLocaleString()}</span>
       </div>
     </div>
   );

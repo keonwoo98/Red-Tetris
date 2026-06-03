@@ -28,7 +28,19 @@
   --c7: #ff9d2e; /* L */
   --c8: #6b6f8a; /* penalty */
 
-  --cell: clamp(15px, 2.3vw, 30px);
+  /* recessed well + semantic threat colors (events flare; ambient stays calm) */
+  --well: #06060d;
+  --well-line: rgba(150, 160, 220, 0.06);
+  --danger: #ff2e4d;
+  --warn: #ff7a2e;
+  --caution: #ffc23d;
+  --safe: #1fe7ff;
+  --gold: #ffd24a;
+  --ko: #ff2e4d;
+  --attack-out: #ff5a78;
+
+  /* board is the hero: cell scales with viewport HEIGHT so the well dominates */
+  --cell: clamp(18px, min(3.4vw, 4.4vh), 32px);
   --radius: 14px;
   --shadow-glow: 0 0 0 1px var(--line-bright), 0 18px 50px -20px rgba(0, 0, 0, 0.9);
 }
