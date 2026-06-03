@@ -49,6 +49,7 @@ export default defineConfig({
         'packages/client/src/main.tsx',
         'packages/client/src/socket/**',
         'packages/server/src/index.ts',
+        'packages/server/src/config.ts',
         'packages/server/src/socket/index.ts',
         'packages/server/src/http/**',
       ],
