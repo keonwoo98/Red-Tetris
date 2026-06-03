@@ -1,5 +1,7 @@
+import { useEffect, useRef } from 'react';
 import { createBoard, ghostPiece, overlayForRender } from '../engine';
 import { useAppSelector } from '../hooks/redux';
+import { selectClearFx, selectDropFx, selectLockFx, selectNearTopOut } from '../store/selectors';
 import { Cell } from './Cell';
 import styles from './Board.module.css';
 
@@ -8,15 +10,35 @@ export const Board = () => {
   const board = useAppSelector((s) => s.game.board);
   const current = useAppSelector((s) => s.game.current);
   const mode = useAppSelector((s) => s.game.mode);
-  const clearFx = useAppSelector((s) => s.game.clearFx);
-  // bonus: invisible mode hides the settled pile and the ghost — you must remember the stack
+  const clearFx = useAppSelector(selectClearFx);
+  const dropFx = useAppSelector(selectDropFx);
+  const lockFx = useAppSelector(selectLockFx);
+  const danger = useAppSelector(selectNearTopOut);
+  const boardRef = useRef<HTMLDivElement>(null);
+
   const invisible = mode === 'invisible';
   const shownBoard = invisible ? createBoard() : board;
   const ghost = current && !invisible ? ghostPiece(board, current) : null;
   const grid = overlayForRender(shownBoard, current, ghost);
 
+  const lockedSet = new Set<string>();
+  if (lockFx) for (const [c, r] of lockFx.cells) lockedSet.add(`${r}-${c}`);
+
+  // hard-drop shake: restart the keyframe via reflow (no 200-cell remount)
+  const dropSeq = dropFx?.seq;
+  const dropAmp = dropFx?.amp;
+  useEffect(() => {
+    const el = boardRef.current;
+    const shakeClass = styles.shaking;
+    if (!el || dropSeq === undefined || !shakeClass) return;
+    el.style.setProperty('--amp', String(dropAmp ?? 2));
+    el.classList.remove(shakeClass);
+    void el.offsetWidth;
+    el.classList.add(shakeClass);
+  }, [dropSeq, dropAmp]);
+
   return (
-    <div className={styles.frame}>
+    <div className={styles.frame} data-danger={danger ? '' : undefined}>
       {clearFx && (
         <div
           key={clearFx.seq}
@@ -24,9 +46,14 @@ export const Board = () => {
           aria-hidden
         />
       )}
-      <div className={styles.board} role="grid" aria-label="Your field">
-        {grid.flatMap((row, r) => row.map((value, c) => <Cell key={`${r}-${c}`} value={value} />))}
+      <div ref={boardRef} className={styles.board} role="grid" aria-label="Your field">
+        {grid.flatMap((row, r) =>
+          row.map((value, c) => (
+            <Cell key={`${r}-${c}`} value={value} justLocked={lockedSet.has(`${r}-${c}`)} />
+          )),
+        )}
       </div>
+      {danger && <div className={styles.vignette} aria-hidden />}
     </div>
   );
 };

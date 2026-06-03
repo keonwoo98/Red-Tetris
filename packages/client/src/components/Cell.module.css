@@ -7,6 +7,23 @@
     box-shadow 120ms ease;
 }
 
+/* freshly-locked cells flash white briefly — the biggest "tactile" win */
+.justLocked {
+  animation: lockFlash 150ms ease-out;
+}
+
+@keyframes lockFlash {
+  0% {
+    filter: brightness(2.4);
+    box-shadow:
+      0 0 12px rgba(255, 255, 255, 0.9),
+      inset 0 0 0 1px #fff;
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
 .empty {
   background: rgba(150, 160, 220, 0.03);
   box-shadow: inset 0 0 0 1px rgba(150, 160, 220, 0.05);

@@ -14,6 +14,9 @@ const CLASS: Record<number, string> = {
   9: styles.ghost!,
 };
 
-export const Cell = ({ value }: { value: RenderCell }) => (
-  <div className={`${styles.cell} ${CLASS[value] ?? styles.empty}`} data-cell={value} />
+export const Cell = ({ value, justLocked }: { value: RenderCell; justLocked?: boolean }) => (
+  <div
+    className={`${styles.cell} ${CLASS[value] ?? styles.empty} ${justLocked ? styles.justLocked : ''}`}
+    data-cell={value}
+  />
 );

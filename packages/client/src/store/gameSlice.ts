@@ -2,6 +2,7 @@ import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { WritableDraft } from 'immer';
 import { LINES_PER_LEVEL, PREVIEW_COUNT, SCORE_TABLE, type GameMode } from '@shared/constants';
 import { pieceAt } from '@shared/rng';
+import { cellsAt } from '@shared/tetrominoes';
 import type { ActivePiece, Board, PieceType } from '@shared/types';
 import {
   addPenaltyLines,
@@ -40,6 +41,9 @@ export interface GameState {
   mode: GameMode;
   // render-only: bumps `seq` each time lines clear so the board can replay a flash
   clearFx: { lines: number; seq: number } | null;
+  // render-only: hard-drop impact (shake amplitude) and freshly-locked cells (flash)
+  dropFx: { seq: number; amp: number } | null;
+  lockFx: { seq: number; cells: [number, number][] } | null;
   // hold slot: stash a piece; one hold per drop (re-armed on lock)
   hold: PieceType | null;
   canHold: boolean;
@@ -63,6 +67,8 @@ const freshState = (): GameState => ({
   level: 1,
   mode: 'classic',
   clearFx: null,
+  dropFx: null,
+  lockFx: null,
   hold: null,
   canHold: true,
 });
@@ -101,9 +107,13 @@ const commitLock = (s: Draft): void => {
   }
 
   // 2. lock + clear
+  const lockedCells: [number, number][] = cellsAt(s.current as ActivePiece)
+    .filter(([, r]) => r >= 0)
+    .map(([c, r]) => [c, r]);
   const locked = lockPiece(s.board as Board, s.current as ActivePiece);
   const { board: cleared, cleared: n } = clearLines(locked);
   s.board = cleared;
+  s.lockFx = { seq: (s.lockFx?.seq ?? 0) + 1, cells: lockedCells };
   if (n > 0) {
     s.score += (SCORE_TABLE[n] ?? 0) * s.level;
     s.lines += n;
@@ -167,7 +177,9 @@ const gameSlice = createSlice({
       if (playable(s)) {
         const prev = s.current as ActivePiece;
         const landed = engineHardDrop(s.board as Board, prev);
-        s.score += Math.max(0, landed.y - prev.y); // 1 point per cell hard-dropped
+        const dist = landed.y - prev.y;
+        s.score += Math.max(0, dist); // 1 point per cell hard-dropped
+        s.dropFx = { seq: (s.dropFx?.seq ?? 0) + 1, amp: Math.min(6, 1 + Math.floor(dist / 4)) };
         s.current = landed;
         commitLock(s);
       }

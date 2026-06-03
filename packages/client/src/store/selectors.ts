@@ -1,5 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit';
 import type { OpponentDTO } from '@shared/protocol';
+import { computeSpectrum } from '../engine';
 import type { RootState } from './index';
 
 export const selectIsHost = (s: RootState): boolean =>
@@ -23,6 +24,13 @@ export const selectLevel = (s: RootState): number => s.game.level;
 export const selectGameMode = (s: RootState) => s.game.mode;
 export const selectHold = (s: RootState) => s.game.hold;
 export const selectCanHold = (s: RootState): boolean => s.game.canHold;
+export const selectDropFx = (s: RootState) => s.game.dropFx;
+export const selectLockFx = (s: RootState) => s.game.lockFx;
+export const selectClearFx = (s: RootState) => s.game.clearFx;
+export const selectNearTopOut = createSelector(
+  (s: RootState) => s.game.board,
+  (board) => Math.max(0, ...computeSpectrum(board)) >= 16,
+);
 
 export const selectOpponents = createSelector(
   (s: RootState) => s.opponents.ids,
