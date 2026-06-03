@@ -15,7 +15,7 @@ export const LOCK_DELAY_FRAMES = 1 as const; // one-frame grace ("immobile only 
 
 export const SPAWN_X = 3 as const;
 export const SPAWN_Y = -1 as const;
-export const PREVIEW_COUNT = 1 as const; // mandatory: show 1 next piece
+export const PREVIEW_COUNT = 5 as const; // next-queue depth (guideline standard)
 
 /** Per-piece spawn origin (box top-left placed on the board), y-down. */
 export const SPAWN: Record<PieceType, Position> = {

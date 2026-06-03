@@ -7,7 +7,7 @@ import { Board } from './Board';
 import { Controls } from './Controls';
 import { GameOverOverlay } from './GameOverOverlay';
 import { HoldPiece } from './HoldPiece';
-import { NextPiece } from './NextPiece';
+import { NextQueue } from './NextQueue';
 import { OpponentsPanel } from './OpponentsPanel';
 import { ScoreHUD } from './ScoreHUD';
 import styles from './GameView.module.css';
@@ -43,7 +43,7 @@ export const GameView = () => {
           <ScoreHUD />
           <div className={styles.pieces}>
             <HoldPiece />
-            <NextPiece />
+            <NextQueue />
           </div>
           <Controls />
           <OpponentsPanel />

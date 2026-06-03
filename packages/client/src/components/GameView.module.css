@@ -67,6 +67,7 @@
 .pieces {
   display: flex;
   gap: 22px;
+  align-items: flex-start;
 }
 
 .grid {

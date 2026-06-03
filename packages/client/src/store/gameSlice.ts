@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { WritableDraft } from 'immer';
-import { LINES_PER_LEVEL, SCORE_TABLE, type GameMode } from '@shared/constants';
+import { LINES_PER_LEVEL, PREVIEW_COUNT, SCORE_TABLE, type GameMode } from '@shared/constants';
 import { pieceAt } from '@shared/rng';
 import type { ActivePiece, Board, PieceType } from '@shared/types';
 import {
@@ -115,7 +115,7 @@ const commitLock = (s: Draft): void => {
 
   // 3. spawn the next piece (deterministic); top out if it cannot enter
   const nextPiece = spawnPiece(pieceAt(s.seed, s.pieceIndex));
-  s.next = nextQueue(s.seed, s.pieceIndex + 1, 1);
+  s.next = nextQueue(s.seed, s.pieceIndex + 1, PREVIEW_COUNT);
   if (collides(cleared, nextPiece)) {
     topOut(s);
     return;
@@ -136,7 +136,7 @@ const gameSlice = createSlice({
       s.mode = a.payload.mode ?? 'classic';
       s.status = 'playing';
       s.current = spawnPiece(pieceAt(a.payload.seed, 0));
-      s.next = nextQueue(a.payload.seed, 1, 1);
+      s.next = nextQueue(a.payload.seed, 1, PREVIEW_COUNT);
       if (collides(s.board as Board, s.current as ActivePiece)) topOut(s);
     },
     moveLeft(s) {
@@ -183,7 +183,7 @@ const gameSlice = createSlice({
         s.hold = currentType;
         s.pieceIndex += 1;
         const nextPiece = spawnPiece(pieceAt(s.seed, s.pieceIndex));
-        s.next = nextQueue(s.seed, s.pieceIndex + 1, 1);
+        s.next = nextQueue(s.seed, s.pieceIndex + 1, PREVIEW_COUNT);
         if (collides(s.board as Board, nextPiece)) {
           topOut(s);
           return;

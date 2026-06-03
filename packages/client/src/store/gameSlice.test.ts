@@ -25,7 +25,7 @@ describe('startGame', () => {
     expect(s.status).toBe('playing');
     expect(s.seed).toBe(42);
     expect(s.current).toEqual(spawnPiece(pieceAt(42, 0)));
-    expect(s.next).toEqual([pieceAt(42, 1)]);
+    expect(s.next).toEqual([1, 2, 3, 4, 5].map((i) => pieceAt(42, i)));
     expect(s.alive).toBe(true);
   });
 });

@@ -1,0 +1,17 @@
+.piece {
+  display: grid;
+  gap: 2px;
+  place-content: center;
+}
+
+.block {
+  width: var(--pc);
+  height: var(--pc);
+  border-radius: 3px;
+}
+
+.empty {
+  width: var(--pc);
+  height: var(--pc);
+  opacity: 0;
+}
