@@ -6,6 +6,7 @@ import { selectClearFx, selectGameStatus, selectIsAlive, selectOpponents } from 
 import { Board } from './Board';
 import { ClearPopup } from './ClearPopup';
 import { Controls } from './Controls';
+import { Countdown } from './Countdown';
 import { GameOverOverlay } from './GameOverOverlay';
 import { GarbageMeter } from './GarbageMeter';
 import { HoldPiece } from './HoldPiece';
@@ -56,6 +57,7 @@ export const GameView = () => {
         <section className={styles.center}>
           <GarbageMeter />
           <Board />
+          <Countdown />
           <ClearPopup />
           {clearFx && clearFx.lines >= 2 && (
             <div key={clearFx.seq} className={styles.sent}>

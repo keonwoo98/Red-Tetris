@@ -27,7 +27,7 @@ describe('<GameOverOverlay>', () => {
     finish(store, 'a', 'a', 'a');
     const { getByText, getByRole } = renderWith(<GameOverOverlay />, store);
     expect(getByText('VICTORY')).toBeInTheDocument();
-    expect(getByRole('button', { name: /NEW ROUND/i })).toBeInTheDocument();
+    expect(getByRole('button', { name: /PLAY AGAIN/i })).toBeInTheDocument();
   });
 
   it('shows DEFEAT when another player wins', () => {

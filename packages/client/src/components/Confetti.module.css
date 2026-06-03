@@ -1,0 +1,29 @@
+.field {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 7;
+}
+
+.bit {
+  position: absolute;
+  top: -16px;
+  width: 7px;
+  height: 13px;
+  border-radius: 1px;
+  background: hsl(calc(var(--hue) * 1deg) 90% 62%);
+  transform: rotate(var(--rot));
+  animation: confettiFall var(--dur) var(--delay) ease-in forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--rot));
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(105vh) rotate(calc(var(--rot) + 540deg));
+  }
+}
