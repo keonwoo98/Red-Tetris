@@ -1,3 +1,6 @@
-// @red-tetris/shared — pure, framework-agnostic barrel.
-// Populated in Phase 1: constants, types, protocol, tetrominoes, rng.
-export {};
+// @red-tetris/shared — public barrel. Pure, framework-agnostic.
+export * from './types';
+export * from './constants';
+export * from './tetrominoes';
+export * from './rng';
+export * from './protocol';

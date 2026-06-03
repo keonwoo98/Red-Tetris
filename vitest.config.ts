@@ -37,6 +37,9 @@ export default defineConfig({
         '**/dist/**',
         '**/*.d.ts',
         '**/index.ts',
+        // type-only modules (no runtime code to cover)
+        'packages/shared/src/types.ts',
+        'packages/shared/src/protocol.ts',
         'packages/client/src/main.tsx',
         'packages/client/src/socket/**',
         'packages/server/src/index.ts',
