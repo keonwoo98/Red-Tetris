@@ -11,7 +11,8 @@ export const GHOST = 9 as const; // RENDER-ONLY; never in an authoritative Board
 export const GRAVITY_MS = 1000 as const; // constant gravity (mandatory, level 0)
 export const SOFT_DROP_FACTOR = 20 as const;
 export const SOFT_DROP_MS = 50 as const; // GRAVITY_MS / SOFT_DROP_FACTOR
-export const LOCK_DELAY_FRAMES = 1 as const; // one-frame grace ("immobile only on the next frame")
+export const LOCK_DELAY_FRAMES = 1 as const; // grace ticks once grounded (soft-drop is decoupled)
+export const MAX_LOCK_RESETS = 15 as const; // moves/rotations that may re-arm the lock delay (anti-stall)
 
 export const SPAWN_X = 3 as const;
 export const SPAWN_Y = -1 as const;

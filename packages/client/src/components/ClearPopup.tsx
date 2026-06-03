@@ -6,14 +6,20 @@ const NAME: Record<number, string> = { 1: 'SINGLE', 2: 'DOUBLE', 3: 'TRIPLE', 4:
 
 export const ClearPopup = () => {
   const fx = useAppSelector(selectClearFx);
-  if (!fx || fx.lines <= 0) return null;
+  if (!fx || (fx.lines <= 0 && !fx.tSpin)) return null;
+
+  const label = fx.perfect
+    ? 'ALL CLEAR'
+    : fx.tSpin
+      ? `T-SPIN ${NAME[fx.lines] ?? ''}`.trim()
+      : (NAME[fx.lines] ?? '');
 
   return (
     <div key={fx.seq} className={styles.wrap} aria-hidden>
       <div
-        className={`${styles.clear} ${fx.lines >= 4 ? styles.tetris : ''} ${fx.perfect ? styles.perfect : ''}`}
+        className={`${styles.clear} ${fx.lines >= 4 ? styles.tetris : ''} ${fx.tSpin ? styles.tspin : ''} ${fx.perfect ? styles.perfect : ''}`}
       >
-        {fx.perfect ? 'ALL CLEAR' : (NAME[fx.lines] ?? '')}
+        {label}
       </div>
       {fx.combo > 1 && (
         <div className={styles.combo} data-heat={Math.min(fx.combo, 8)}>

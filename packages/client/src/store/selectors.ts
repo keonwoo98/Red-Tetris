@@ -1,5 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { computeSpectrum } from '../engine';
+import { computeSpectrum, isGrounded } from '../engine';
 import type { RootState } from './index';
 import type { OpponentView } from './opponentsSlice';
 
@@ -41,4 +41,11 @@ export const selectOpponents = createSelector(
   (s: RootState) => s.opponents.ids,
   (s: RootState) => s.opponents.byId,
   (ids, byId): OpponentView[] => ids.map((id) => byId[id]).filter((o): o is OpponentView => Boolean(o)),
+);
+
+/** True when the active piece is resting on the stack/floor — used to hold lock delay open during soft drop. */
+export const selectIsGrounded = createSelector(
+  (s: RootState) => s.game.board,
+  (s: RootState) => s.game.current,
+  (board, current) => current !== null && isGrounded(board, current),
 );

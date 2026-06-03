@@ -28,6 +28,14 @@
   font-size: 1.4rem;
 }
 
+.tspin {
+  color: #d07bff;
+  text-shadow:
+    0 0 22px #a000f0,
+    0 0 34px #a000f0;
+  font-size: 1.3rem;
+}
+
 .perfect {
   color: #fff;
   text-shadow:

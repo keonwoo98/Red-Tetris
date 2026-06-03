@@ -1,6 +1,15 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { WritableDraft } from 'immer';
-import { LINES_PER_LEVEL, PREVIEW_COUNT, SCORE_TABLE, type GameMode } from '@shared/constants';
+import {
+  BOARD_HEIGHT,
+  BOARD_WIDTH,
+  EMPTY,
+  LINES_PER_LEVEL,
+  MAX_LOCK_RESETS,
+  PREVIEW_COUNT,
+  SCORE_TABLE,
+  type GameMode,
+} from '@shared/constants';
 import { pieceAt } from '@shared/rng';
 import { cellsAt } from '@shared/tetrominoes';
 import type { ActivePiece, Board, PieceType } from '@shared/types';
@@ -29,6 +38,8 @@ export interface GameState {
   next: PieceType[];
   status: 'idle' | 'playing' | 'gameover';
   wasGroundedLastFrame: boolean;
+  lockResets: number; // move/rotate re-arms used since grounding (anti-stall cap)
+  lastWasRotation: boolean; // true if the last successful action was a rotation (for T-spin)
   pendingPenalty: number;
   lockEvent: { board: Board; cleared: number; pieceIndex: number } | null;
   softDropActive: boolean;
@@ -42,7 +53,14 @@ export interface GameState {
   b2b: number;
   mode: GameMode;
   // render-only: bumps `seq` each time lines clear so the board can replay a flash
-  clearFx: { lines: number; seq: number; combo: number; b2b: number; perfect: boolean } | null;
+  clearFx: {
+    lines: number;
+    seq: number;
+    combo: number;
+    b2b: number;
+    perfect: boolean;
+    tSpin: boolean;
+  } | null;
   // render-only: hard-drop impact (shake amplitude) and freshly-locked cells (flash)
   dropFx: { seq: number; amp: number } | null;
   lockFx: { seq: number; cells: [number, number][] } | null;
@@ -61,6 +79,8 @@ const freshState = (): GameState => ({
   next: [],
   status: 'idle',
   wasGroundedLastFrame: false,
+  lockResets: 0,
+  lastWasRotation: false,
   pendingPenalty: 0,
   lockEvent: null,
   softDropActive: false,
@@ -84,10 +104,19 @@ type Draft = WritableDraft<GameState>;
 
 const playable = (s: Draft): boolean => s.status === 'playing' && s.alive && s.current !== null;
 
-/** After a move/rotate, re-arm the lock delay if the piece is no longer grounded. */
+/**
+ * After a move/rotate: if the piece floated free, re-arm and clear the reset budget.
+ * If it's still grounded, a move/rotate also re-arms the one-tick grace (up to MAX_LOCK_RESETS)
+ * so players can tuck pieces and spin into gaps near the floor — modern lock-delay feel.
+ */
 const reArm = (s: Draft): void => {
-  if (s.current && !isGrounded(s.board as Board, s.current as ActivePiece)) {
+  if (!s.current) return;
+  if (!isGrounded(s.board as Board, s.current as ActivePiece)) {
     s.wasGroundedLastFrame = false;
+    s.lockResets = 0;
+  } else if (s.wasGroundedLastFrame && s.lockResets < MAX_LOCK_RESETS) {
+    s.wasGroundedLastFrame = false;
+    s.lockResets += 1;
   }
 };
 
@@ -96,6 +125,28 @@ const topOut = (s: Draft): void => {
   s.alive = false;
   s.current = null;
 };
+
+/** A corner counts as "filled" for the T-spin rule if it holds a block or is a wall/floor; open sky does not. */
+const cornerFilled = (board: Board, x: number, y: number): boolean => {
+  if (x < 0 || x >= BOARD_WIDTH || y >= BOARD_HEIGHT) return true;
+  if (y < 0) return false;
+  return (board[y]?.[x] ?? EMPTY) !== EMPTY;
+};
+
+/** 3-corner rule: a T with ≥3 of its bounding-box corners occupied. Pair with `lastWasRotation` at the call site. */
+const isTSpin = (board: Board, p: ActivePiece): boolean => {
+  if (p.type !== 'T') return false;
+  const corners: [number, number][] = [
+    [p.x, p.y],
+    [p.x + 2, p.y],
+    [p.x, p.y + 2],
+    [p.x + 2, p.y + 2],
+  ];
+  return corners.filter(([x, y]) => cornerFilled(board, x, y)).length >= 3;
+};
+
+/** Bonus points for a T-spin by lines cleared (index 0..3), multiplied by the current level. */
+const TSPIN_SCORE = [400, 800, 1200, 1600] as const;
 
 /** Lock the current piece into the board, flushing pending penalty first, then spawn the next. */
 const commitLock = (s: Draft): void => {
@@ -113,7 +164,10 @@ const commitLock = (s: Draft): void => {
     }
   }
 
-  // 2. lock + clear
+  // 2. recognise a T-spin against the resting stack (the last action must have been a real rotation)
+  const tSpin = s.lastWasRotation && isTSpin(s.board as Board, s.current as ActivePiece);
+
+  // 3. lock + clear
   const lockedCells: [number, number][] = cellsAt(s.current as ActivePiece)
     .filter(([, r]) => r >= 0)
     .map(([c, r]) => [c, r]);
@@ -123,9 +177,10 @@ const commitLock = (s: Draft): void => {
   s.lockFx = { seq: (s.lockFx?.seq ?? 0) + 1, cells: lockedCells };
   if (n > 0) {
     s.combo += 1;
-    if (n >= 4) s.b2b += 1;
+    if (n >= 4 || tSpin) s.b2b += 1; // tetrises and T-spin clears sustain the back-to-back chain
     else s.b2b = 0;
-    s.score += (SCORE_TABLE[n] ?? 0) * s.level;
+    const base = tSpin ? (TSPIN_SCORE[n] ?? 0) : (SCORE_TABLE[n] ?? 0);
+    s.score += base * s.level;
     s.lines += n;
     s.level = Math.floor(s.lines / LINES_PER_LEVEL) + 1;
     const perfect = cleared.every((row) => row.every((c) => c === 0));
@@ -135,6 +190,18 @@ const commitLock = (s: Draft): void => {
       combo: s.combo,
       b2b: s.b2b,
       perfect,
+      tSpin,
+    };
+  } else if (tSpin) {
+    // a T-spin with no line clear still scores and pops, and leaves the combo/b2b chain intact
+    s.score += TSPIN_SCORE[0] * s.level;
+    s.clearFx = {
+      lines: 0,
+      seq: (s.clearFx?.seq ?? 0) + 1,
+      combo: s.combo,
+      b2b: s.b2b,
+      perfect: false,
+      tSpin: true,
     };
   } else {
     s.combo = 0;
@@ -142,7 +209,7 @@ const commitLock = (s: Draft): void => {
   s.pieceIndex += 1;
   s.lockEvent = { board: cleared, cleared: n, pieceIndex: s.pieceIndex };
 
-  // 3. spawn the next piece (deterministic); top out if it cannot enter
+  // 4. spawn the next piece (deterministic); top out if it cannot enter
   const nextPiece = spawnPiece(pieceAt(s.seed, s.pieceIndex));
   s.next = nextQueue(s.seed, s.pieceIndex + 1, PREVIEW_COUNT);
   if (collides(cleared, nextPiece)) {
@@ -151,6 +218,8 @@ const commitLock = (s: Draft): void => {
   }
   s.current = nextPiece;
   s.wasGroundedLastFrame = false;
+  s.lockResets = 0;
+  s.lastWasRotation = false;
   s.canHold = true; // re-arm hold for the new piece
 };
 
@@ -171,24 +240,30 @@ const gameSlice = createSlice({
     moveLeft(s) {
       if (playable(s)) {
         s.current = engineMoveLeft(s.board as Board, s.current as ActivePiece);
+        s.lastWasRotation = false;
         reArm(s);
       }
     },
     moveRight(s) {
       if (playable(s)) {
         s.current = engineMoveRight(s.board as Board, s.current as ActivePiece);
+        s.lastWasRotation = false;
         reArm(s);
       }
     },
     rotateCW(s) {
       if (playable(s)) {
-        s.current = rotate(s.board as Board, s.current as ActivePiece);
+        const prev = s.current as ActivePiece;
+        const rotated = rotate(s.board as Board, prev);
+        s.current = rotated;
+        s.lastWasRotation = rotated !== prev; // true only if it actually turned
         reArm(s);
       }
     },
     softDrop(s) {
       if (playable(s)) {
         s.current = moveDown(s.board as Board, s.current as ActivePiece);
+        s.lastWasRotation = false;
         reArm(s);
       }
     },
@@ -200,6 +275,8 @@ const gameSlice = createSlice({
         s.score += Math.max(0, dist); // 1 point per cell hard-dropped
         s.dropFx = { seq: (s.dropFx?.seq ?? 0) + 1, amp: Math.min(6, 1 + Math.floor(dist / 4)) };
         s.current = landed;
+        // a hard drop that travels was a translation, not a spin; a 0-cell drop keeps a prior rotation (T-spin)
+        if (dist > 0) s.lastWasRotation = false;
         commitLock(s);
       }
     },
@@ -229,6 +306,8 @@ const gameSlice = createSlice({
       }
       s.canHold = false;
       s.wasGroundedLastFrame = false;
+      s.lockResets = 0;
+      s.lastWasRotation = false;
     },
     tick(s) {
       if (!playable(s)) return;
@@ -239,6 +318,8 @@ const gameSlice = createSlice({
       if (out.kind === 'lock') {
         commitLock(s);
       } else {
+        // a natural gravity fall clears the T-spin flag; only a rotation right before lock counts
+        if (out.kind === 'falling') s.lastWasRotation = false;
         s.current = out.state.piece;
         s.wasGroundedLastFrame = out.state.wasGroundedLastFrame;
       }

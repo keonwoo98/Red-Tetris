@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { MAX_LOCK_RESETS } from '@shared/constants';
 import { pieceAt } from '@shared/rng';
 import { spawnPiece } from '@shared/tetrominoes';
 import type { Cell } from '@shared/types';
@@ -43,10 +44,20 @@ describe('movement reducers', () => {
     expect(reducer(init(), gameActions.moveLeft())).toEqual(init());
   });
 
-  it('keeps the lock armed when a grounded move stays grounded', () => {
+  it('re-arms the lock delay when a grounded move stays grounded (tuck window)', () => {
     const landed = engineHardDrop(createBoard(), spawnPiece('O'));
-    const s = playing({ current: landed, wasGroundedLastFrame: true });
-    expect(reducer(s, gameActions.moveLeft()).wasGroundedLastFrame).toBe(true);
+    const s = playing({ current: landed, wasGroundedLastFrame: true, lockResets: 0 });
+    const after = reducer(s, gameActions.moveLeft());
+    expect(after.wasGroundedLastFrame).toBe(false); // grace handed back so the piece can be tucked
+    expect(after.lockResets).toBe(1);
+  });
+
+  it('stops re-arming once the reset budget is spent (anti-stall)', () => {
+    const landed = engineHardDrop(createBoard(), spawnPiece('O'));
+    const s = playing({ current: landed, wasGroundedLastFrame: true, lockResets: MAX_LOCK_RESETS });
+    const after = reducer(s, gameActions.moveLeft());
+    expect(after.wasGroundedLastFrame).toBe(true); // budget exhausted → the lock stays armed
+    expect(after.lockResets).toBe(MAX_LOCK_RESETS);
   });
 });
 
@@ -195,6 +206,35 @@ describe('combo & back-to-back', () => {
 
   it('combo resets to 0 on a non-clearing lock', () => {
     expect(reducer(playing({ combo: 4 }), gameActions.hardDrop()).combo).toBe(0);
+  });
+});
+
+describe('T-spin (bonus)', () => {
+  // a down-pointing T resting in a notch with 3 of its box corners walled in
+  const tSpinBoard = () => {
+    const board = createBoard();
+    board[17]![0] = 1 as Cell; // top-left corner
+    board[17]![2] = 1 as Cell; // top-right corner
+    board[19]![0] = 1 as Cell; // bottom-left corner
+    return board;
+  };
+  const downT = { type: 'T' as const, rotation: 2 as const, x: 0, y: 17 };
+
+  it('recognises a rotated T-spin: awards the bonus and flags the popup', () => {
+    const after = reducer(
+      playing({ board: tSpinBoard(), current: downT, lastWasRotation: true }),
+      gameActions.hardDrop(),
+    );
+    expect(after.clearFx?.tSpin).toBe(true);
+    expect(after.score).toBeGreaterThanOrEqual(400); // T-spin no-line bonus (400 × level 1)
+  });
+
+  it('does not flag a T-spin when the last action was a translation', () => {
+    const after = reducer(
+      playing({ board: tSpinBoard(), current: downT, lastWasRotation: false }),
+      gameActions.hardDrop(),
+    );
+    expect(after.clearFx?.tSpin ?? false).toBe(false);
   });
 });
 
