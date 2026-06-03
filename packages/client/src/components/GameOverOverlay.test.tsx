@@ -13,6 +13,7 @@ const finish = (store: TestStore, youId: string, hostId: string, winnerId: strin
         hostId,
         players: [{ id: youId, name: 'me', isHost: youId === hostId, alive: true }],
         seed: 1,
+        mode: 'classic',
       },
       youId,
     }),

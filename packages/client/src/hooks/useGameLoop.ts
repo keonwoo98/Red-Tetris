@@ -1,5 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { GRAVITY_MS, SOFT_DROP_MS } from '@shared/constants';
+import {
+  GRAVITY_MS,
+  RISING_GRAVITY_MIN_MS,
+  RISING_GRAVITY_STEP_MS,
+  SOFT_DROP_MS,
+} from '@shared/constants';
 import { gameActions } from '../store/gameSlice';
 import { useAppDispatch, useAppSelector } from './redux';
 
@@ -12,11 +17,18 @@ export const useGameLoop = (): void => {
   const dispatch = useAppDispatch();
   const status = useAppSelector((s) => s.game.status);
   const soft = useAppSelector((s) => s.game.softDropActive);
+  const mode = useAppSelector((s) => s.game.mode);
+  const level = useAppSelector((s) => s.game.level);
   const raf = useRef(0);
 
   useEffect(() => {
     if (status !== 'playing') return;
-    const interval = soft ? SOFT_DROP_MS : GRAVITY_MS;
+    // bonus: rising-gravity mode speeds up each level (clamped)
+    const gravity =
+      mode === 'rising'
+        ? Math.max(RISING_GRAVITY_MIN_MS, GRAVITY_MS - (level - 1) * RISING_GRAVITY_STEP_MS)
+        : GRAVITY_MS;
+    const interval = soft ? SOFT_DROP_MS : gravity;
     let last = performance.now();
     let acc = 0;
     const step = (now: number): void => {
@@ -30,5 +42,5 @@ export const useGameLoop = (): void => {
     };
     raf.current = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf.current);
-  }, [status, soft, dispatch]);
+  }, [status, soft, mode, level, dispatch]);
 };

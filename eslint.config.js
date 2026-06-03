@@ -17,6 +17,17 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
 
+  // allow intentionally-unused args/vars prefixed with _
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
+
   // ---------- CLIENT: ban `this`, enforce functional style ----------
   {
     files: ['packages/client/src/**/*.{ts,tsx}'],

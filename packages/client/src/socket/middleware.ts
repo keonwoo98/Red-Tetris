@@ -1,5 +1,5 @@
 import type { Middleware } from '@reduxjs/toolkit';
-import { FEATURES } from '@shared/constants';
+import { FEATURES, type GameMode } from '@shared/constants';
 import { computeSpectrum } from '../engine';
 import type { RootState } from '../store';
 import { gameActions } from '../store/gameSlice';
@@ -34,6 +34,9 @@ export const socketMiddleware: Middleware = (api) => (next) => (action) => {
       break;
     case 'lobby/requestRestart':
       socket.emit('restart', () => undefined);
+      break;
+    case 'lobby/requestSetMode':
+      socket.emit('set-mode', a.payload as GameMode);
       break;
     default:
       break;

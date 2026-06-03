@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import type { GameMode } from '@shared/constants';
 import type { GameStatus, PlayerDTO, RoomState } from '@shared/protocol';
 
 export interface LobbyState {
@@ -8,6 +9,7 @@ export interface LobbyState {
   hostId: string | null;
   players: PlayerDTO[];
   status: GameStatus;
+  mode: GameMode;
   connection: 'idle' | 'connecting' | 'connected' | 'error';
   joinError: string | null;
 }
@@ -19,6 +21,7 @@ const initialState: LobbyState = {
   hostId: null,
   players: [],
   status: 'lobby',
+  mode: 'classic',
   connection: 'idle',
   joinError: null,
 };
@@ -28,6 +31,7 @@ const applyRoom = (s: LobbyState, r: RoomState): void => {
   s.hostId = r.hostId;
   s.players = r.players;
   s.status = r.status;
+  s.mode = r.mode;
 };
 
 const lobbySlice = createSlice({
@@ -62,6 +66,7 @@ const lobbySlice = createSlice({
     // middleware-only triggers (no state change)
     requestStart() {},
     requestRestart() {},
+    requestSetMode(_s, _a: PayloadAction<GameMode>) {},
     connectionError(s) {
       s.connection = 'error';
     },

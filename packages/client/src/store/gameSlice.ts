@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { WritableDraft } from 'immer';
-import { LINES_PER_LEVEL, SCORE_TABLE } from '@shared/constants';
+import { LINES_PER_LEVEL, SCORE_TABLE, type GameMode } from '@shared/constants';
 import { pieceAt } from '@shared/rng';
 import type { ActivePiece, Board, PieceType } from '@shared/types';
 import {
@@ -37,6 +37,7 @@ export interface GameState {
   score: number;
   lines: number;
   level: number;
+  mode: GameMode;
 }
 
 const freshState = (): GameState => ({
@@ -55,6 +56,7 @@ const freshState = (): GameState => ({
   score: 0,
   lines: 0,
   level: 1,
+  mode: 'classic',
 });
 
 type Draft = WritableDraft<GameState>;
@@ -117,10 +119,11 @@ const gameSlice = createSlice({
   name: 'game',
   initialState: freshState(),
   reducers: {
-    startGame(s, a: PayloadAction<{ seed: number }>) {
+    startGame(s, a: PayloadAction<{ seed: number; mode?: GameMode }>) {
       const fresh = freshState();
       Object.assign(s, fresh);
       s.seed = a.payload.seed;
+      s.mode = a.payload.mode ?? 'classic';
       s.status = 'playing';
       s.current = spawnPiece(pieceAt(a.payload.seed, 0));
       s.next = nextQueue(a.payload.seed, 1, 1);

@@ -7,7 +7,7 @@ import { makeStore, renderWith, type TestStore } from './test-utils';
 const joinAs = (store: TestStore, youId: string, hostId: string, players: PlayerDTO[]): void => {
   store.dispatch(
     lobbyActions.joined({
-      state: { room: 'neon', status: 'lobby', hostId, players, seed: null },
+      state: { room: 'neon', status: 'lobby', hostId, players, seed: null, mode: 'classic' },
       youId,
     }),
   );
@@ -31,5 +31,13 @@ describe('<Lobby>', () => {
     const { getByText, queryByRole } = renderWith(<Lobby />, store);
     expect(getByText(/waiting for the host/i)).toBeInTheDocument();
     expect(queryByRole('button', { name: /START/i })).toBeNull();
+  });
+
+  it('lets the host pick a game mode (bonus)', () => {
+    const store = makeStore();
+    joinAs(store, 'a', 'a', [{ id: 'a', name: 'alice', isHost: true, alive: true }]);
+    const { getByRole } = renderWith(<Lobby />, store);
+    expect(getByRole('button', { name: /invisible/i })).not.toBeDisabled();
+    expect(getByRole('button', { name: /rising/i })).not.toBeDisabled();
   });
 });

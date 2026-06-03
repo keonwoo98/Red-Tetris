@@ -1,6 +1,7 @@
 // @red-tetris/shared — THE single source of truth for the socket.io contract:
 // every event name, payload type, and the typed socket maps. `playerId` is the
 // server-assigned stable UUID (NOT socket.id); the join ack returns it as `youId`.
+import type { GameMode } from './constants.js';
 import type { Spectrum } from './types.js';
 
 export type GameStatus = 'lobby' | 'playing' | 'ended';
@@ -25,6 +26,7 @@ export interface RoomState {
   hostId: string | null;
   players: PlayerDTO[];
   seed: number | null;
+  mode: GameMode;
 }
 
 export type ErrorCode =
@@ -56,6 +58,7 @@ export interface GameStartPayload {
   seed: number;
   startedAt: number;
   players: PlayerDTO[];
+  mode: GameMode;
 }
 export interface LockReport {
   board: number[][];
@@ -123,6 +126,7 @@ export interface ClientToServerEvents {
   // bonus
   'score:report': (p: ScoreReport) => void;
   leaderboard: (ack: (entries: LeaderboardEntry[]) => void) => void;
+  'set-mode': (mode: GameMode) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

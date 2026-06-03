@@ -95,6 +95,18 @@ describe('Game · lifecycle', () => {
     expect(g.seed).toBe(null);
     expect(g.restart('a')).toBe(false); // already lobby
   });
+
+  it('setMode is host-only and lobby-only (bonus)', () => {
+    const g = mk();
+    g.addPlayer('a', 'sa', 'alice');
+    g.addPlayer('b', 'sb', 'bob');
+    expect(g.setMode('b', 'invisible')).toBe(false); // not host
+    expect(g.setMode('a', 'invisible')).toBe(true);
+    expect(g.mode).toBe('invisible');
+    expect(g.serializeRoom().mode).toBe('invisible');
+    g.start('a');
+    expect(g.setMode('a', 'rising')).toBe(false); // not lobby
+  });
 });
 
 describe('Game · determinism', () => {

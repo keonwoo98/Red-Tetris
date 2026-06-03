@@ -4,6 +4,7 @@ import { SPECTRUM_LENGTH } from '@red-tetris/shared';
 import type {
   Ack,
   ClientToServerEvents,
+  GameMode,
   GameStartPayload,
   InterServerEvents,
   JoinPayload,
@@ -85,6 +86,7 @@ function handleStart(
     seed: g.seed!,
     startedAt: g.startedAt!,
     players: g.serializeRoom().players,
+    mode: g.mode,
   };
   ack({ ok: true, data: payload });
   io.to(room).emit('game:started', payload);
@@ -190,6 +192,13 @@ function handleScore(socket: AppSocket, store: ScoreStore, p: ScoreReport): void
   store.record(name, p.score, Date.now());
 }
 
+function handleSetMode(io: IO, registry: RoomManager, socket: AppSocket, mode: GameMode): void {
+  const { room, playerId } = socket.data;
+  const g = gameOf(registry, socket);
+  if (!room || !playerId || !g) return;
+  if (g.setMode(playerId, mode)) io.to(room).emit('room:state', g.serializeRoom());
+}
+
 /** Wire all socket.io event handlers. One RoomManager backs all concurrent games. */
 export function registerSocketHandlers(io: IO, registry: RoomManager, store: ScoreStore): void {
   io.on('connection', (socket) => {
@@ -201,6 +210,7 @@ export function registerSocketHandlers(io: IO, registry: RoomManager, store: Sco
     socket.on('player:topout', () => handleTopout(io, registry, socket));
     socket.on('score:report', (p) => handleScore(socket, store, p));
     socket.on('leaderboard', (ack: (entries: LeaderboardEntry[]) => void) => ack(store.top(10)));
+    socket.on('set-mode', (mode) => handleSetMode(io, registry, socket, mode));
     socket.on('leave', () => handleExit(io, registry, socket, 'leave'));
     socket.on('disconnect', () => handleExit(io, registry, socket, 'disconnect'));
   });

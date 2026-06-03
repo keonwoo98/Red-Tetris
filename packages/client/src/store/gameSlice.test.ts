@@ -171,3 +171,11 @@ describe('scoring (bonus)', () => {
     expect([s.score, s.lines, s.level]).toEqual([0, 0, 1]);
   });
 });
+
+describe('game modes (bonus)', () => {
+  it('startGame applies the broadcast mode, defaulting to classic', () => {
+    expect(reducer(init(), gameActions.startGame({ seed: 1, mode: 'rising' })).mode).toBe('rising');
+    expect(reducer(init(), gameActions.startGame({ seed: 1, mode: 'invisible' })).mode).toBe('invisible');
+    expect(reducer(init(), gameActions.startGame({ seed: 1 })).mode).toBe('classic');
+  });
+});

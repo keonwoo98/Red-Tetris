@@ -7,6 +7,7 @@ export const selectIsHost = (s: RootState): boolean =>
 export const selectMyId = (s: RootState): string | null => s.lobby.myId;
 export const selectRoomStatus = (s: RootState) => s.lobby.status;
 export const selectPlayers = (s: RootState) => s.lobby.players;
+export const selectLobbyMode = (s: RootState) => s.lobby.mode;
 export const selectConnection = (s: RootState) => s.lobby.connection;
 export const selectJoinError = (s: RootState): string | null => s.lobby.joinError;
 
@@ -19,6 +20,7 @@ export const selectWinnerId = (s: RootState): string | null => s.game.winnerId;
 export const selectScore = (s: RootState): number => s.game.score;
 export const selectLines = (s: RootState): number => s.game.lines;
 export const selectLevel = (s: RootState): number => s.game.level;
+export const selectGameMode = (s: RootState) => s.game.mode;
 
 export const selectOpponents = createSelector(
   (s: RootState) => s.opponents.ids,

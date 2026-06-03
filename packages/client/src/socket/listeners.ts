@@ -25,7 +25,7 @@ export const bindSocketListeners = (dispatch: AppDispatch, getState: () => RootS
   });
 
   socket.on('host:changed', (p) => dispatch(lobbyActions.hostChanged({ hostId: p.hostId })));
-  socket.on('game:started', (p) => dispatch(gameActions.startGame({ seed: p.seed })));
+  socket.on('game:started', (p) => dispatch(gameActions.startGame({ seed: p.seed, mode: p.mode })));
   socket.on('penalty:apply', (p) => dispatch(gameActions.applyPenalty({ n: p.count })));
   socket.on('spectrum:update', (p) => dispatch(opponentsActions.spectrumUpdate(p)));
 

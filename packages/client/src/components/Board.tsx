@@ -1,4 +1,4 @@
-import { ghostPiece, overlayForRender } from '../engine';
+import { createBoard, ghostPiece, overlayForRender } from '../engine';
 import { useAppSelector } from '../hooks/redux';
 import { Cell } from './Cell';
 import styles from './Board.module.css';
@@ -7,8 +7,12 @@ import styles from './Board.module.css';
 export const Board = () => {
   const board = useAppSelector((s) => s.game.board);
   const current = useAppSelector((s) => s.game.current);
-  const ghost = current ? ghostPiece(board, current) : null;
-  const grid = overlayForRender(board, current, ghost);
+  const mode = useAppSelector((s) => s.game.mode);
+  // bonus: invisible mode hides the settled pile and the ghost — you must remember the stack
+  const invisible = mode === 'invisible';
+  const shownBoard = invisible ? createBoard() : board;
+  const ghost = current && !invisible ? ghostPiece(board, current) : null;
+  const grid = overlayForRender(shownBoard, current, ghost);
 
   return (
     <div className={styles.frame}>

@@ -1,5 +1,12 @@
 import { pieceAt } from '@red-tetris/shared';
-import type { GameStatus, OpponentDTO, PieceType, RoomState, Spectrum } from '@red-tetris/shared';
+import type {
+  GameMode,
+  GameStatus,
+  OpponentDTO,
+  PieceType,
+  RoomState,
+  Spectrum,
+} from '@red-tetris/shared';
 import { GameNotStartedError } from './errors.js';
 import { Piece } from './Piece.js';
 import { Player } from './Player.js';
@@ -33,6 +40,7 @@ export class Game {
   status: GameStatus = 'lobby';
   hostId: string | null = null;
   startedAt: number | null = null;
+  mode: GameMode = 'classic'; // bonus: host-selected game mode
   private starterIds = new Set<string>();
 
   constructor(room: string) {
@@ -99,6 +107,14 @@ export class Game {
 
   isHost(playerId: string): boolean {
     return this.hostId === playerId;
+  }
+
+  /** HOST-ONLY, lobby only. Select the game mode (bonus). */
+  setMode(byPlayerId: string, mode: GameMode): boolean {
+    if (!this.isHost(byPlayerId)) return false;
+    if (this.status !== 'lobby') return false;
+    this.mode = mode;
+    return true;
   }
 
   // ---- lifecycle -------------------------------------------------------
@@ -218,6 +234,7 @@ export class Game {
       hostId: this.hostId,
       players: this.players.map((p) => p.toDTO()),
       seed: this.status === 'playing' ? this.seed : null,
+      mode: this.mode,
     };
   }
 

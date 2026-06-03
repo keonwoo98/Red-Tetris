@@ -10,6 +10,7 @@ const room = (over: Partial<RoomState> = {}): RoomState => ({
   hostId: 'a',
   players: [{ id: 'a', name: 'alice', isHost: true, alive: true }],
   seed: null,
+  mode: 'classic',
   ...over,
 });
 
