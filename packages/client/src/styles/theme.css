@@ -1,0 +1,133 @@
+:root {
+  /* surfaces */
+  --bg: #07070d;
+  --bg-2: #0c0c16;
+  --panel: rgba(18, 18, 28, 0.72);
+  --panel-solid: #11111c;
+  --line: rgba(120, 130, 200, 0.14);
+  --line-bright: rgba(140, 150, 220, 0.28);
+
+  /* ink */
+  --ink: #e8eaff;
+  --ink-dim: #9aa0c8;
+  --ink-faint: #5b6090;
+
+  /* brand */
+  --red: #ff2e4d;
+  --red-soft: #ff6178;
+  --cyan: #1fe7ff;
+  --amber: #ffb020;
+
+  /* piece colors (match shared COLOR_HEX, neon-tuned) */
+  --c1: #2ce8ff; /* I */
+  --c2: #ffe11a; /* O */
+  --c3: #b65bff; /* T */
+  --c4: #2bff88; /* S */
+  --c5: #ff2e4d; /* Z */
+  --c6: #4d7bff; /* J */
+  --c7: #ff9d2e; /* L */
+  --c8: #6b6f8a; /* penalty */
+
+  --cell: clamp(15px, 2.3vw, 30px);
+  --radius: 14px;
+  --shadow-glow: 0 0 0 1px var(--line-bright), 0 18px 50px -20px rgba(0, 0, 0, 0.9);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background:
+    radial-gradient(1100px 700px at 78% -8%, rgba(255, 46, 77, 0.16), transparent 60%),
+    radial-gradient(900px 620px at 12% 108%, rgba(31, 231, 255, 0.12), transparent 60%),
+    linear-gradient(180deg, var(--bg-2), var(--bg));
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* faint blueprint grid + scanlines over everything */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at 50% 40%, #000 55%, transparent 95%);
+  opacity: 0.5;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.022) 0px,
+    rgba(255, 255, 255, 0.022) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+#root {
+  position: relative;
+  z-index: 2;
+}
+
+h1,
+h2,
+h3 {
+  font-family: 'Chakra Petch', sans-serif;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+button {
+  font-family: 'Chakra Petch', sans-serif;
+  cursor: pointer;
+}
+
+a {
+  color: var(--cyan);
+}
+
+::selection {
+  background: var(--red);
+  color: #fff;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

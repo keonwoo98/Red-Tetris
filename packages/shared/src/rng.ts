@@ -1,4 +1,4 @@
-import type { PieceType } from './types';
+import type { PieceType } from './types.js';
 
 /** Base order used to seed each 7-bag before shuffling. */
 export const PIECE_ORDER = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'] as const;

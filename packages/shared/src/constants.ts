@@ -1,4 +1,4 @@
-import type { Cell, PieceType, Position } from './types';
+import type { Cell, PieceType, Position } from './types.js';
 
 export const BOARD_WIDTH = 10 as const;
 export const BOARD_HEIGHT = 20 as const;

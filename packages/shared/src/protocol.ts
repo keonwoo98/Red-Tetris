@@ -1,7 +1,7 @@
 // @red-tetris/shared — THE single source of truth for the socket.io contract:
 // every event name, payload type, and the typed socket maps. `playerId` is the
 // server-assigned stable UUID (NOT socket.id); the join ack returns it as `youId`.
-import type { Spectrum } from './types';
+import type { Spectrum } from './types.js';
 
 export type GameStatus = 'lobby' | 'playing' | 'ended';
 

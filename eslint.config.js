@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
@@ -22,7 +23,7 @@ export default tseslint.config(
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
     languageOptions: {
       parserOptions: { ecmaFeatures: { jsx: true } },
-      globals: { window: 'readonly', document: 'readonly' },
+      globals: { ...globals.browser },
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -42,7 +43,7 @@ export default tseslint.config(
   // ---------- SERVER: OOP allowed (classes / this required) ----------
   {
     files: ['packages/server/src/**/*.ts'],
-    languageOptions: { globals: { process: 'readonly', console: 'readonly' } },
+    languageOptions: { globals: { ...globals.node } },
     rules: { 'no-restricted-syntax': 'off' },
   },
 

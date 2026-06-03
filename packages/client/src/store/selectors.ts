@@ -1,3 +1,4 @@
+import { createSelector } from '@reduxjs/toolkit';
 import type { OpponentDTO } from '@shared/protocol';
 import type { RootState } from './index';
 
@@ -16,5 +17,8 @@ export const selectGameStatus = (s: RootState) => s.game.status;
 export const selectIsAlive = (s: RootState): boolean => s.game.alive;
 export const selectWinnerId = (s: RootState): string | null => s.game.winnerId;
 
-export const selectOpponents = (s: RootState): OpponentDTO[] =>
-  s.opponents.ids.map((id) => s.opponents.byId[id]!).filter(Boolean);
+export const selectOpponents = createSelector(
+  (s: RootState) => s.opponents.ids,
+  (s: RootState) => s.opponents.byId,
+  (ids, byId): OpponentDTO[] => ids.map((id) => byId[id]).filter((o): o is OpponentDTO => Boolean(o)),
+);

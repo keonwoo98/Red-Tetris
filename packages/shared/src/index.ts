@@ -1,6 +1,6 @@
 // @red-tetris/shared — public barrel. Pure, framework-agnostic.
-export * from './types';
-export * from './constants';
-export * from './tetrominoes';
-export * from './rng';
-export * from './protocol';
+export * from './types.js';
+export * from './constants.js';
+export * from './tetrominoes.js';
+export * from './rng.js';
+export * from './protocol.js';

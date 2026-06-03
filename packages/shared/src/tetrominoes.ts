@@ -1,5 +1,5 @@
-import { SPAWN } from './constants';
-import type { ActivePiece, Cell, Coord, PieceType, RotationState } from './types';
+import { SPAWN } from './constants.js';
+import type { ActivePiece, Cell, Coord, PieceType, RotationState } from './types.js';
 
 // SHAPES[type][rotation] = the 4 occupied (col,row) cells inside the piece's bounding box.
 // I/O use a 4×4 box; J/L/S/T/Z use a 3×3 box. Data is the y-down table (origin top-left).

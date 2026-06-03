@@ -1,0 +1,147 @@
+.screen {
+  min-height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 6vh 20px;
+  position: relative;
+}
+
+.glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(540px 320px at 50% 32%, rgba(255, 46, 77, 0.18), transparent 70%);
+}
+
+.hero {
+  position: relative;
+  width: min(520px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+}
+
+.kicker {
+  margin: 0;
+  font-size: 0.66rem;
+  letter-spacing: 0.42em;
+  color: var(--ink-faint);
+  animation: rise 420ms ease both;
+}
+
+.logo {
+  font-family: 'Press Start 2P', 'Chakra Petch', sans-serif;
+  font-size: clamp(1.7rem, 6vw, 3rem);
+  line-height: 1.18;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+  color: var(--ink);
+  text-shadow: 0 0 24px rgba(255, 46, 77, 0.5);
+  animation: rise 520ms ease both;
+  animation-delay: 60ms;
+}
+
+.logo .t {
+  color: var(--red);
+  text-shadow: 0 0 28px rgba(255, 46, 77, 0.85);
+}
+
+.tagline {
+  margin: 0 auto;
+  max-width: 38ch;
+  font-size: 0.84rem;
+  line-height: 1.6;
+  color: var(--ink-dim);
+  animation: rise 560ms ease both;
+  animation-delay: 120ms;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 12px;
+  padding: 22px;
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-glow);
+  backdrop-filter: blur(8px);
+  animation: rise 600ms ease both;
+  animation-delay: 180ms;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.field span {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.64rem;
+  letter-spacing: 0.28em;
+  color: var(--ink-faint);
+}
+
+.input {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  color: var(--ink);
+  background: #0a0a14;
+  border: none;
+  border-radius: 9px;
+  padding: 12px 14px;
+  box-shadow: inset 0 0 0 1px var(--line-bright);
+  outline: none;
+  transition: box-shadow 160ms ease;
+}
+
+.input::placeholder {
+  color: var(--ink-faint);
+}
+
+.input:focus {
+  box-shadow:
+    inset 0 0 0 1px var(--cyan),
+    0 0 0 3px rgba(31, 231, 255, 0.16);
+}
+
+.enter {
+  margin-top: 4px;
+  font-size: 0.92rem;
+  letter-spacing: 0.14em;
+  color: #fff;
+  background: linear-gradient(180deg, var(--red-soft), var(--red));
+  border: none;
+  border-radius: 9px;
+  padding: 13px 16px;
+  box-shadow: 0 10px 28px -10px rgba(255, 46, 77, 0.8);
+  transition:
+    transform 120ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+}
+
+.enter:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 36px -12px rgba(255, 46, 77, 0.95);
+}
+
+.enter:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.enter:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+}
