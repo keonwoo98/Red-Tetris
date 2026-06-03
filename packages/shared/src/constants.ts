@@ -44,3 +44,24 @@ export const COLOR_HEX: Record<number, string> = {
   8: '#808080',
   9: '#FFFFFF',
 };
+
+// ---- bonus: scoring, game modes, feature flags ----
+
+/** Base points by number of lines cleared at once (index 0..4), multiplied by the current level. */
+export const SCORE_TABLE = [0, 100, 300, 500, 800] as const;
+export const LINES_PER_LEVEL = 10 as const;
+
+/** Game modes (bonus). `classic` is the mandatory behaviour. */
+export type GameMode = 'classic' | 'invisible' | 'rising';
+
+/** Rising-gravity mode: gravity speeds up every level, clamped. */
+export const RISING_GRAVITY_MIN_MS = 120 as const;
+export const RISING_GRAVITY_STEP_MS = 80 as const;
+
+/** Client build-time feature flags (bonus features are additive; classic play ignores them). */
+export const FEATURES = {
+  SCORING: true,
+  GAME_MODES: true,
+  FRP: true,
+} as const;
+

@@ -1,5 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { WritableDraft } from 'immer';
+import { LINES_PER_LEVEL, SCORE_TABLE } from '@shared/constants';
 import { pieceAt } from '@shared/rng';
 import type { ActivePiece, Board, PieceType } from '@shared/types';
 import {
@@ -32,6 +33,10 @@ export interface GameState {
   softDropActive: boolean;
   alive: boolean;
   winnerId: string | null;
+  // bonus: scoring (does not affect the win condition)
+  score: number;
+  lines: number;
+  level: number;
 }
 
 const freshState = (): GameState => ({
@@ -47,6 +52,9 @@ const freshState = (): GameState => ({
   softDropActive: false,
   alive: true,
   winnerId: null,
+  score: 0,
+  lines: 0,
+  level: 1,
 });
 
 type Draft = WritableDraft<GameState>;
@@ -86,6 +94,11 @@ const commitLock = (s: Draft): void => {
   const locked = lockPiece(s.board as Board, s.current as ActivePiece);
   const { board: cleared, cleared: n } = clearLines(locked);
   s.board = cleared;
+  if (n > 0) {
+    s.score += (SCORE_TABLE[n] ?? 0) * s.level;
+    s.lines += n;
+    s.level = Math.floor(s.lines / LINES_PER_LEVEL) + 1;
+  }
   s.pieceIndex += 1;
   s.lockEvent = { board: cleared, cleared: n, pieceIndex: s.pieceIndex };
 
@@ -139,7 +152,10 @@ const gameSlice = createSlice({
     },
     hardDrop(s) {
       if (playable(s)) {
-        s.current = engineHardDrop(s.board as Board, s.current as ActivePiece);
+        const prev = s.current as ActivePiece;
+        const landed = engineHardDrop(s.board as Board, prev);
+        s.score += Math.max(0, landed.y - prev.y); // 1 point per cell hard-dropped
+        s.current = landed;
         commitLock(s);
       }
     },

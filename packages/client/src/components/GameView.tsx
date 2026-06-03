@@ -7,6 +7,7 @@ import { Controls } from './Controls';
 import { GameOverOverlay } from './GameOverOverlay';
 import { NextPiece } from './NextPiece';
 import { OpponentsPanel } from './OpponentsPanel';
+import { ScoreHUD } from './ScoreHUD';
 import styles from './GameView.module.css';
 
 export const GameView = () => {
@@ -31,6 +32,7 @@ export const GameView = () => {
           <Board />
         </section>
         <aside className={styles.side}>
+          <ScoreHUD />
           <NextPiece />
           <Controls />
           <OpponentsPanel />

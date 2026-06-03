@@ -144,3 +144,30 @@ describe('terminal + misc reducers', () => {
     expect(reducer(playing(), gameActions.setSoftDrop(true)).softDropActive).toBe(true);
   });
 });
+
+describe('scoring (bonus)', () => {
+  it('awards points and counts lines on a clear', () => {
+    const board = createBoard();
+    for (let c = 0; c < 10; c++) if (c < 3 || c > 6) board[19]![c] = 1 as Cell;
+    const after = reducer(playing({ board, current: spawnPiece('I') }), gameActions.hardDrop());
+    expect(after.lines).toBe(1);
+    expect(after.score).toBeGreaterThanOrEqual(100); // single (100 × level 1) + drop bonus
+  });
+
+  it('awards a hard-drop bonus even without a clear', () => {
+    expect(reducer(playing(), gameActions.hardDrop()).score).toBeGreaterThan(0);
+  });
+
+  it('raises the level every 10 lines', () => {
+    const board = createBoard();
+    for (let c = 0; c < 10; c++) if (c < 3 || c > 6) board[19]![c] = 1 as Cell;
+    const after = reducer(playing({ board, current: spawnPiece('I'), lines: 9 }), gameActions.hardDrop());
+    expect(after.lines).toBe(10);
+    expect(after.level).toBe(2);
+  });
+
+  it('startGame resets score, lines and level', () => {
+    const s = reducer(playing({ score: 999, lines: 5, level: 3 }), gameActions.startGame({ seed: 1 }));
+    expect([s.score, s.lines, s.level]).toEqual([0, 0, 1]);
+  });
+});

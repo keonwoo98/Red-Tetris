@@ -16,6 +16,9 @@ export const selectNext = (s: RootState) => s.game.next;
 export const selectGameStatus = (s: RootState) => s.game.status;
 export const selectIsAlive = (s: RootState): boolean => s.game.alive;
 export const selectWinnerId = (s: RootState): string | null => s.game.winnerId;
+export const selectScore = (s: RootState): number => s.game.score;
+export const selectLines = (s: RootState): number => s.game.lines;
+export const selectLevel = (s: RootState): number => s.game.level;
 
 export const selectOpponents = createSelector(
   (s: RootState) => s.opponents.ids,
