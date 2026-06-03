@@ -1,0 +1,6 @@
+{
+  "name": "@red-tetris/server",
+  "type": "module",
+  "scripts": { "dev": "tsx watch src/index.ts", "build": "tsc -b" },
+  "dependencies": { "express": "^5.1.0", "socket.io": "^4.8.0", "@red-tetris/shared": "*" }
+}
