@@ -8,14 +8,17 @@ import type {
   InterServerEvents,
   JoinPayload,
   JoinResult,
+  LeaderboardEntry,
   LockReport,
   ProtocolError,
   RoomState,
+  ScoreReport,
   ServerToClientEvents,
   SocketData,
   SpectrumReport,
 } from '@red-tetris/shared';
 import { RoomManager } from '../models/RoomManager.js';
+import type { ScoreStore } from '../persistence/scoreStore.js';
 import { validateName, validateRoom } from './validation.js';
 
 type IO = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
@@ -181,8 +184,14 @@ function handleExit(io: IO, registry: RoomManager, socket: AppSocket, mode: 'lea
   }
 }
 
+function handleScore(socket: AppSocket, store: ScoreStore, p: ScoreReport): void {
+  const name = socket.data.name;
+  if (!name || !p || typeof p.score !== 'number') return;
+  store.record(name, p.score, Date.now());
+}
+
 /** Wire all socket.io event handlers. One RoomManager backs all concurrent games. */
-export function registerSocketHandlers(io: IO, registry: RoomManager): void {
+export function registerSocketHandlers(io: IO, registry: RoomManager, store: ScoreStore): void {
   io.on('connection', (socket) => {
     socket.on('join', (payload, ack) => handleJoin(io, registry, socket, payload, ack));
     socket.on('start', (ack) => handleStart(io, registry, socket, ack));
@@ -190,6 +199,8 @@ export function registerSocketHandlers(io: IO, registry: RoomManager): void {
     socket.on('board:locked', (p) => handleLock(io, registry, socket, p));
     socket.on('spectrum:report', (p) => handleSpectrum(io, registry, socket, p));
     socket.on('player:topout', () => handleTopout(io, registry, socket));
+    socket.on('score:report', (p) => handleScore(socket, store, p));
+    socket.on('leaderboard', (ack: (entries: LeaderboardEntry[]) => void) => ack(store.top(10)));
     socket.on('leave', () => handleExit(io, registry, socket, 'leave'));
     socket.on('disconnect', () => handleExit(io, registry, socket, 'disconnect'));
   });

@@ -1,3 +1,4 @@
+import { existsSync, rmSync } from 'node:fs';
 import { createServer, type Server as HttpServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { Server } from 'socket.io';
@@ -8,12 +9,16 @@ import type {
   ClientToServerEvents,
   GameStartPayload,
   JoinResult,
+  LeaderboardEntry,
   PenaltyApplyPayload,
   RoomState,
   ServerToClientEvents,
 } from '@red-tetris/shared';
 import { RoomManager } from '../models/RoomManager.js';
+import { createFileScoreStore } from '../persistence/scoreStore.js';
 import { registerSocketHandlers } from './index.js';
+
+const SCORE_TMP = '/tmp/rt-integration-scores.json';
 
 type CS = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -25,7 +30,7 @@ const open: CS[] = [];
 beforeEach(async () => {
   httpServer = createServer();
   io = new Server(httpServer);
-  registerSocketHandlers(io, new RoomManager());
+  registerSocketHandlers(io, new RoomManager(), createFileScoreStore(SCORE_TMP));
   await new Promise<void>((resolve) => httpServer.listen(0, resolve));
   port = (httpServer.address() as AddressInfo).port;
 });
@@ -33,6 +38,7 @@ beforeEach(async () => {
 afterEach(async () => {
   for (const s of open.splice(0)) s.disconnect();
   await new Promise<void>((resolve) => io.close(() => resolve()));
+  if (existsSync(SCORE_TMP)) rmSync(SCORE_TMP);
 });
 
 const connect = (): CS => {
@@ -170,5 +176,14 @@ describe('socket integration', () => {
     a.disconnect();
     const hc = await migrated;
     expect(hc.reason).toBe('migrated');
+  });
+
+  it('I11: score:report persists and leaderboard returns the top entries (bonus)', async () => {
+    const a = connect();
+    await join(a, 'neon', 'alice');
+    a.emit('score:report', { score: 4200 });
+    await wait(40);
+    const entries = await new Promise<LeaderboardEntry[]>((resolve) => a.emit('leaderboard', resolve));
+    expect(entries[0]).toEqual({ name: 'alice', score: 4200 });
   });
 });

@@ -92,6 +92,15 @@ export interface HostChangedPayload {
   reason: 'assigned' | 'migrated';
 }
 
+// bonus: persistence / leaderboard
+export interface ScoreReport {
+  score: number;
+}
+export interface LeaderboardEntry {
+  name: string;
+  score: number;
+}
+
 export interface ServerToClientEvents {
   'room:state': (s: RoomState) => void;
   'host:changed': (p: HostChangedPayload) => void;
@@ -111,6 +120,9 @@ export interface ClientToServerEvents {
   'spectrum:report': (p: SpectrumReport) => void;
   'player:topout': (p: TopoutReport) => void;
   leave: () => void;
+  // bonus
+  'score:report': (p: ScoreReport) => void;
+  leaderboard: (ack: (entries: LeaderboardEntry[]) => void) => void;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type

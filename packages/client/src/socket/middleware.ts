@@ -1,4 +1,5 @@
 import type { Middleware } from '@reduxjs/toolkit';
+import { FEATURES } from '@shared/constants';
 import { computeSpectrum } from '../engine';
 import type { RootState } from '../store';
 import { gameActions } from '../store/gameSlice';
@@ -59,6 +60,7 @@ export const socketMiddleware: Middleware = (api) => (next) => (action) => {
   ) {
     socket.emit('player:topout', { atPieceIndex: after.game.pieceIndex });
     socket.emit('spectrum:report', { spectrum: computeSpectrum(after.game.board) });
+    if (FEATURES.SCORING) socket.emit('score:report', { score: after.game.score });
   }
 
   // penalty flushed between pieces (no lock) → report the new spectrum

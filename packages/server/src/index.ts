@@ -8,9 +8,10 @@ import type {
   ServerToClientEvents,
   SocketData,
 } from '@red-tetris/shared';
-import { CLIENT_ORIGIN, PORT, isDev } from './config.js';
+import { CLIENT_ORIGIN, FEATURE_PERSISTENCE, PORT, SCORE_DB_PATH, isDev } from './config.js';
 import { buildApp } from './http/createHttpApp.js';
 import { RoomManager } from './models/RoomManager.js';
+import { createFileScoreStore, createNoopScoreStore } from './persistence/scoreStore.js';
 import { registerSocketHandlers } from './socket/index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -24,7 +25,11 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEve
   { cors: isDev ? { origin: CLIENT_ORIGIN, methods: ['GET', 'POST'] } : {} },
 );
 
-registerSocketHandlers(io, new RoomManager());
+const scoreStore = FEATURE_PERSISTENCE
+  ? createFileScoreStore(SCORE_DB_PATH)
+  : createNoopScoreStore();
+
+registerSocketHandlers(io, new RoomManager(), scoreStore);
 
 httpServer.listen(PORT, () => {
   console.log(`Red Tetris server listening on http://localhost:${PORT}`);
