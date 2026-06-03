@@ -8,6 +8,7 @@ export const Board = () => {
   const board = useAppSelector((s) => s.game.board);
   const current = useAppSelector((s) => s.game.current);
   const mode = useAppSelector((s) => s.game.mode);
+  const clearFx = useAppSelector((s) => s.game.clearFx);
   // bonus: invisible mode hides the settled pile and the ghost — you must remember the stack
   const invisible = mode === 'invisible';
   const shownBoard = invisible ? createBoard() : board;
@@ -16,6 +17,13 @@ export const Board = () => {
 
   return (
     <div className={styles.frame}>
+      {clearFx && (
+        <div
+          key={clearFx.seq}
+          className={`${styles.flash} ${clearFx.lines >= 4 ? styles.tetris : ''}`}
+          aria-hidden
+        />
+      )}
       <div className={styles.board} role="grid" aria-label="Your field">
         {grid.flatMap((row, r) => row.map((value, c) => <Cell key={`${r}-${c}`} value={value} />))}
       </div>

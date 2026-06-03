@@ -38,6 +38,8 @@ export interface GameState {
   lines: number;
   level: number;
   mode: GameMode;
+  // render-only: bumps `seq` each time lines clear so the board can replay a flash
+  clearFx: { lines: number; seq: number } | null;
 }
 
 const freshState = (): GameState => ({
@@ -57,6 +59,7 @@ const freshState = (): GameState => ({
   lines: 0,
   level: 1,
   mode: 'classic',
+  clearFx: null,
 });
 
 type Draft = WritableDraft<GameState>;
@@ -100,6 +103,7 @@ const commitLock = (s: Draft): void => {
     s.score += (SCORE_TABLE[n] ?? 0) * s.level;
     s.lines += n;
     s.level = Math.floor(s.lines / LINES_PER_LEVEL) + 1;
+    s.clearFx = { lines: n, seq: (s.clearFx?.seq ?? 0) + 1 };
   }
   s.pieceIndex += 1;
   s.lockEvent = { board: cleared, cleared: n, pieceIndex: s.pieceIndex };

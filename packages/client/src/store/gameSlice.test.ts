@@ -152,6 +152,7 @@ describe('scoring (bonus)', () => {
     const after = reducer(playing({ board, current: spawnPiece('I') }), gameActions.hardDrop());
     expect(after.lines).toBe(1);
     expect(after.score).toBeGreaterThanOrEqual(100); // single (100 × level 1) + drop bonus
+    expect(after.clearFx?.lines).toBe(1); // render flash signal
   });
 
   it('awards a hard-drop bonus even without a clear', () => {

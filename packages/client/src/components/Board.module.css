@@ -1,9 +1,86 @@
 .frame {
+  position: relative;
   padding: 10px;
   border-radius: calc(var(--radius) + 4px);
   background: linear-gradient(160deg, rgba(255, 46, 77, 0.16), rgba(31, 231, 255, 0.1));
   box-shadow: var(--shadow-glow);
   animation: rise 480ms ease both;
+}
+
+/* line-clear flash overlay (key={seq} remounts to replay) */
+.flash {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  border-radius: inherit;
+  animation: clearFlash 460ms ease-out forwards;
+}
+
+@keyframes clearFlash {
+  0% {
+    opacity: 1;
+    background: rgba(180, 240, 255, 0.45);
+    box-shadow:
+      0 0 70px 10px var(--cyan),
+      inset 0 0 80px rgba(150, 235, 255, 0.55);
+  }
+  55% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+/* tetris (4 lines): stronger, red→white→cyan burst + shake */
+.tetris {
+  animation:
+    clearFlashTetris 720ms ease-out forwards,
+    boardShake 360ms ease-in-out;
+}
+
+@keyframes clearFlashTetris {
+  0% {
+    opacity: 1;
+    background: rgba(255, 90, 120, 0.55);
+    box-shadow:
+      0 0 110px 18px var(--red),
+      inset 0 0 110px rgba(255, 130, 160, 0.7);
+  }
+  35% {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 0 120px 20px var(--cyan),
+      inset 0 0 120px rgba(180, 245, 255, 0.7);
+  }
+  100% {
+    opacity: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+@keyframes boardShake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-4px, 2px);
+  }
+  40% {
+    transform: translate(5px, -2px);
+  }
+  60% {
+    transform: translate(-3px, 3px);
+  }
+  80% {
+    transform: translate(3px, -1px);
+  }
 }
 
 .board {
