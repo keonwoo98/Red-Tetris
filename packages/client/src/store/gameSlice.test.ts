@@ -181,6 +181,23 @@ describe('scoring (bonus)', () => {
   });
 });
 
+describe('combo & back-to-back', () => {
+  it('combo increments on a clear and is carried in clearFx', () => {
+    const board = createBoard();
+    for (let c = 0; c < 10; c++) if (c < 3 || c > 6) board[19]![c] = 1 as Cell;
+    const after = reducer(
+      playing({ board, current: spawnPiece('I'), combo: 0 }),
+      gameActions.hardDrop(),
+    );
+    expect(after.combo).toBe(1);
+    expect(after.clearFx?.combo).toBe(1);
+  });
+
+  it('combo resets to 0 on a non-clearing lock', () => {
+    expect(reducer(playing({ combo: 4 }), gameActions.hardDrop()).combo).toBe(0);
+  });
+});
+
 describe('game modes (bonus)', () => {
   it('startGame applies the broadcast mode, defaulting to classic', () => {
     expect(reducer(init(), gameActions.startGame({ seed: 1, mode: 'rising' })).mode).toBe('rising');

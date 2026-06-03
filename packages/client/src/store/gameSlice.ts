@@ -38,9 +38,11 @@ export interface GameState {
   score: number;
   lines: number;
   level: number;
+  combo: number;
+  b2b: number;
   mode: GameMode;
   // render-only: bumps `seq` each time lines clear so the board can replay a flash
-  clearFx: { lines: number; seq: number } | null;
+  clearFx: { lines: number; seq: number; combo: number; b2b: number; perfect: boolean } | null;
   // render-only: hard-drop impact (shake amplitude) and freshly-locked cells (flash)
   dropFx: { seq: number; amp: number } | null;
   lockFx: { seq: number; cells: [number, number][] } | null;
@@ -67,6 +69,8 @@ const freshState = (): GameState => ({
   score: 0,
   lines: 0,
   level: 1,
+  combo: 0,
+  b2b: 0,
   mode: 'classic',
   clearFx: null,
   dropFx: null,
@@ -118,10 +122,22 @@ const commitLock = (s: Draft): void => {
   s.board = cleared;
   s.lockFx = { seq: (s.lockFx?.seq ?? 0) + 1, cells: lockedCells };
   if (n > 0) {
+    s.combo += 1;
+    if (n >= 4) s.b2b += 1;
+    else s.b2b = 0;
     s.score += (SCORE_TABLE[n] ?? 0) * s.level;
     s.lines += n;
     s.level = Math.floor(s.lines / LINES_PER_LEVEL) + 1;
-    s.clearFx = { lines: n, seq: (s.clearFx?.seq ?? 0) + 1 };
+    const perfect = cleared.every((row) => row.every((c) => c === 0));
+    s.clearFx = {
+      lines: n,
+      seq: (s.clearFx?.seq ?? 0) + 1,
+      combo: s.combo,
+      b2b: s.b2b,
+      perfect,
+    };
+  } else {
+    s.combo = 0;
   }
   s.pieceIndex += 1;
   s.lockEvent = { board: cleared, cleared: n, pieceIndex: s.pieceIndex };

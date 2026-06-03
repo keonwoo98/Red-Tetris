@@ -1,0 +1,97 @@
+.wrap {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.clear {
+  font-family: 'Press Start 2P', 'Chakra Petch', sans-serif;
+  font-size: 1.05rem;
+  color: var(--cyan);
+  text-shadow: 0 0 18px var(--cyan);
+  animation:
+    punchIn 220ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both,
+    floatOut 600ms 360ms ease-in forwards;
+}
+
+.tetris {
+  color: var(--gold);
+  text-shadow: 0 0 26px var(--gold);
+  font-size: 1.4rem;
+}
+
+.perfect {
+  color: #fff;
+  text-shadow:
+    0 0 28px var(--cyan),
+    0 0 40px var(--cyan);
+}
+
+.combo {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--cyan);
+  animation:
+    punchIn 200ms 60ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both,
+    floatOut 560ms 420ms ease-in forwards;
+}
+.combo[data-heat='2'] {
+  color: var(--caution);
+}
+.combo[data-heat='3'],
+.combo[data-heat='4'] {
+  color: var(--warn);
+}
+.combo[data-heat='5'],
+.combo[data-heat='6'],
+.combo[data-heat='7'],
+.combo[data-heat='8'] {
+  color: var(--danger);
+  text-shadow: 0 0 14px var(--danger);
+}
+
+.b2b {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+  animation:
+    punchIn 200ms 100ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both,
+    floatOut 560ms 460ms ease-in forwards;
+}
+
+@keyframes punchIn {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(-12deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.25) rotate(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes floatOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+}

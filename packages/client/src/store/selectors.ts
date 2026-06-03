@@ -34,6 +34,8 @@ export const selectNearTopOut = createSelector(
 export const selectPendingPenalty = (s: RootState): number => s.game.pendingPenalty;
 export const selectLastAttack = (s: RootState) => s.game.lastAttack;
 export const selectPlacementOrder = (s: RootState) => s.opponents.placementOrder;
+export const selectCombo = (s: RootState): number => s.game.combo;
+export const selectB2B = (s: RootState): number => s.game.b2b;
 
 export const selectOpponents = createSelector(
   (s: RootState) => s.opponents.ids,

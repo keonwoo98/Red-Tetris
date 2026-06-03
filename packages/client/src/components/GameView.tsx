@@ -4,6 +4,7 @@ import { useGameLoop } from '../hooks/useGameLoop';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { selectClearFx, selectGameStatus, selectIsAlive, selectOpponents } from '../store/selectors';
 import { Board } from './Board';
+import { ClearPopup } from './ClearPopup';
 import { Controls } from './Controls';
 import { GameOverOverlay } from './GameOverOverlay';
 import { GarbageMeter } from './GarbageMeter';
@@ -55,6 +56,7 @@ export const GameView = () => {
         <section className={styles.center}>
           <GarbageMeter />
           <Board />
+          <ClearPopup />
           {clearFx && clearFx.lines >= 2 && (
             <div key={clearFx.seq} className={styles.sent}>
               SENT {clearFx.lines - 1} →
