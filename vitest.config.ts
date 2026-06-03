@@ -1,11 +1,17 @@
+import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 import tsconfigPaths from 'vite-tsconfig-paths'; // hoisted import (no top-level await — robustness)
+
+// Server source imports the shared package by name (production resolves to dist via package
+// exports). In tests we alias it to the TS source so no prebuild step is needed.
+const sharedSrc = resolve(import.meta.dirname, 'packages/shared/src/index.ts');
 
 export default defineConfig({
   test: {
     projects: [
       {
         extends: true,
+        resolve: { alias: { '@red-tetris/shared': sharedSrc } },
         test: {
           name: 'node',
           environment: 'node',

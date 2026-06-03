@@ -53,7 +53,7 @@ describe('overlayForRender', () => {
     const grid = overlayForRender(board, null, ghost);
     const flatGhost = grid.flat().filter((c) => c === 9);
     expect(flatGhost.length).toBe(4);
-    expect(board.flat().some((c) => c === 9)).toBe(false); // authoritative board untouched
+    expect(board.flat().every((c) => c === 0)).toBe(true); // authoritative board untouched (no 9)
   });
   it('current piece takes precedence over the ghost where they overlap', () => {
     const grid = overlayForRender(createBoard(), spawnPiece('O'), ghostPiece(createBoard(), spawnPiece('O')));
