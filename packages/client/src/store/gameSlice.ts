@@ -3,11 +3,14 @@ import type { WritableDraft } from 'immer';
 import {
   BOARD_HEIGHT,
   BOARD_WIDTH,
+  COMBO_BONUS,
   EMPTY,
   LINES_PER_LEVEL,
   MAX_LOCK_RESETS,
+  PERFECT_CLEAR_BONUS,
   PREVIEW_COUNT,
   SCORE_TABLE,
+  SOFT_DROP_POINTS,
   type GameMode,
 } from '@shared/constants';
 import { pieceAt } from '@shared/rng';
@@ -179,11 +182,13 @@ const commitLock = (s: Draft): void => {
     s.combo += 1;
     if (n >= 4 || tSpin) s.b2b += 1; // tetrises and T-spin clears sustain the back-to-back chain
     else s.b2b = 0;
+    const perfect = cleared.every((row) => row.every((c) => c === 0));
     const base = tSpin ? (TSPIN_SCORE[n] ?? 0) : (SCORE_TABLE[n] ?? 0);
     s.score += base * s.level;
+    if (s.combo > 1) s.score += COMBO_BONUS * (s.combo - 1) * s.level; // consecutive-clear chain bonus
+    if (perfect) s.score += PERFECT_CLEAR_BONUS * s.level; // all-clear (perfect clear) bonus
     s.lines += n;
     s.level = Math.floor(s.lines / LINES_PER_LEVEL) + 1;
-    const perfect = cleared.every((row) => row.every((c) => c === 0));
     s.clearFx = {
       lines: n,
       seq: (s.clearFx?.seq ?? 0) + 1,
@@ -262,7 +267,9 @@ const gameSlice = createSlice({
     },
     softDrop(s) {
       if (playable(s)) {
+        const before = (s.current as ActivePiece).y;
         s.current = moveDown(s.board as Board, s.current as ActivePiece);
+        if ((s.current as ActivePiece).y > before) s.score += SOFT_DROP_POINTS;
         s.lastWasRotation = false;
         reArm(s);
       }
@@ -318,8 +325,11 @@ const gameSlice = createSlice({
       if (out.kind === 'lock') {
         commitLock(s);
       } else {
-        // a natural gravity fall clears the T-spin flag; only a rotation right before lock counts
-        if (out.kind === 'falling') s.lastWasRotation = false;
+        if (out.kind === 'falling') {
+          // a natural gravity fall clears the T-spin flag; only a rotation right before lock counts
+          s.lastWasRotation = false;
+          if (s.softDropActive) s.score += SOFT_DROP_POINTS; // soft-drop cells score while held
+        }
         s.current = out.state.piece;
         s.wasGroundedLastFrame = out.state.wasGroundedLastFrame;
       }

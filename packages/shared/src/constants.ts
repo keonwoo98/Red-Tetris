@@ -13,6 +13,8 @@ export const SOFT_DROP_FACTOR = 20 as const;
 export const SOFT_DROP_MS = 50 as const; // GRAVITY_MS / SOFT_DROP_FACTOR
 export const LOCK_DELAY_FRAMES = 1 as const; // grace ticks once grounded (soft-drop is decoupled)
 export const MAX_LOCK_RESETS = 15 as const; // moves/rotations that may re-arm the lock delay (anti-stall)
+export const DAS_MS = 130 as const; // delayed auto shift: hold delay before horizontal auto-repeat kicks in
+export const ARR_MS = 20 as const; // auto repeat rate: interval between auto-shifts once DAS has elapsed
 
 export const SPAWN_X = 3 as const;
 export const SPAWN_Y = -1 as const;
@@ -51,6 +53,9 @@ export const COLOR_HEX: Record<number, string> = {
 /** Base points by number of lines cleared at once (index 0..4), multiplied by the current level. */
 export const SCORE_TABLE = [0, 100, 300, 500, 800] as const;
 export const LINES_PER_LEVEL = 10 as const;
+export const SOFT_DROP_POINTS = 1 as const; // points per cell descended under soft drop
+export const COMBO_BONUS = 50 as const; // points per consecutive-clear step (× level), guideline standard
+export const PERFECT_CLEAR_BONUS = 3500 as const; // all-clear (perfect clear) bonus (× level)
 
 /** Game modes (bonus). `classic` is the mandatory behaviour. */
 export type GameMode = 'classic' | 'invisible' | 'rising';

@@ -207,6 +207,39 @@ describe('combo & back-to-back', () => {
   it('combo resets to 0 on a non-clearing lock', () => {
     expect(reducer(playing({ combo: 4 }), gameActions.hardDrop()).combo).toBe(0);
   });
+
+  it('adds a combo chain bonus that scales with the combo count', () => {
+    const run = (combo: number): GameState => {
+      const board = createBoard();
+      for (let c = 0; c < 10; c++) if (c < 3 || c > 6) board[19]![c] = 1 as Cell;
+      return reducer(playing({ board, current: spawnPiece('I'), combo }), gameActions.hardDrop());
+    };
+    const first = run(0); // becomes combo 1 → no chain bonus
+    const chained = run(3); // becomes combo 4 → 50 × (4-1) × level 1
+    expect(chained.score - first.score).toBe(50 * 3);
+  });
+});
+
+describe('soft-drop & perfect-clear scoring (bonus)', () => {
+  it('awards a point per cell on an active soft drop', () => {
+    expect(reducer(playing(), gameActions.softDrop()).score).toBe(1);
+  });
+
+  it('scores soft-drop cells on a gravity tick while soft drop is held', () => {
+    expect(reducer(playing({ softDropActive: true }), gameActions.tick()).score).toBe(1);
+  });
+
+  it('does not score gravity ticks when soft drop is not held', () => {
+    expect(reducer(playing({ softDropActive: false }), gameActions.tick()).score).toBe(0);
+  });
+
+  it('awards a perfect-clear (all-clear) bonus when the board ends empty', () => {
+    const board = createBoard();
+    for (let c = 0; c < 10; c++) if (c < 3 || c > 6) board[19]![c] = 1 as Cell;
+    const after = reducer(playing({ board, current: spawnPiece('I') }), gameActions.hardDrop());
+    expect(after.clearFx?.perfect).toBe(true);
+    expect(after.score).toBeGreaterThanOrEqual(3500); // perfect-clear bonus dominates the line score
+  });
 });
 
 describe('T-spin (bonus)', () => {

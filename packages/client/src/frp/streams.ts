@@ -10,7 +10,9 @@ export type InputIntent =
   | 'soft-start'
   | 'soft-end'
   | 'hard'
-  | 'hold';
+  | 'hold'
+  | 'left-up'
+  | 'right-up';
 
 /** PURE: map a key event phase + key to an input intent (or null). */
 export const keyToIntent = (phase: 'down' | 'up', key: string): InputIntent | null => {
@@ -35,7 +37,16 @@ export const keyToIntent = (phase: 'down' | 'up', key: string): InputIntent | nu
         return null;
     }
   }
-  return key === 'ArrowDown' ? 'soft-end' : null;
+  switch (key) {
+    case 'ArrowDown':
+      return 'soft-end';
+    case 'ArrowLeft':
+      return 'left-up';
+    case 'ArrowRight':
+      return 'right-up';
+    default:
+      return null;
+  }
 };
 
 export interface IntervalStream {

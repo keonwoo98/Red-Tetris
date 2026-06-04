@@ -15,9 +15,12 @@ describe('keyToIntent', () => {
     expect(keyToIntent('down', 'k')).toBeNull();
   });
 
-  it('maps ArrowDown keyup to soft-end and ignores other keyups', () => {
+  it('maps keyups to release intents (soft-end + horizontal DAS releases)', () => {
     expect(keyToIntent('up', 'ArrowDown')).toBe('soft-end');
-    expect(keyToIntent('up', 'ArrowLeft')).toBeNull();
+    expect(keyToIntent('up', 'ArrowLeft')).toBe('left-up');
+    expect(keyToIntent('up', 'ArrowRight')).toBe('right-up');
+    expect(keyToIntent('up', 'ArrowUp')).toBeNull();
+    expect(keyToIntent('up', ' ')).toBeNull();
   });
 });
 
