@@ -52,4 +52,10 @@ describe('lobbySlice', () => {
     const joined = reducer(init(), lobbyActions.joined({ state: room(), youId: 'a' }));
     expect(reducer(joined, lobbyActions.leaveLobby())).toEqual(init());
   });
+
+  it('defaults the solo objective to endless and lets requestSetObjective change it locally', () => {
+    expect(init().objective).toBe('endless');
+    expect(reducer(init(), lobbyActions.requestSetObjective('sprint')).objective).toBe('sprint');
+    expect(reducer(init(), lobbyActions.requestSetObjective('marathon')).objective).toBe('marathon');
+  });
 });

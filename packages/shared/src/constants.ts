@@ -60,6 +60,17 @@ export const PERFECT_CLEAR_BONUS = 3500 as const; // all-clear (perfect clear) b
 /** Game modes (bonus). `classic` is the mandatory behaviour. */
 export type GameMode = 'classic' | 'invisible' | 'rising';
 
+/** Solo objectives (bonus). `endless` = survive forever (default); the others define a win goal. */
+export type SoloObjective = 'endless' | 'sprint' | 'marathon';
+export const SPRINT_LINES = 40 as const; // race to clear 40 lines (time attack)
+export const MARATHON_LINES = 150 as const; // clear 150 lines to finish
+/** Lines needed to complete a solo objective; `endless` has no goal. */
+export const OBJECTIVE_GOAL: Record<SoloObjective, number | null> = {
+  endless: null,
+  sprint: SPRINT_LINES,
+  marathon: MARATHON_LINES,
+};
+
 /** Rising-gravity mode: gravity speeds up every level, clamped. */
 export const RISING_GRAVITY_MIN_MS = 120 as const;
 export const RISING_GRAVITY_STEP_MS = 80 as const;

@@ -183,3 +183,33 @@
     transform: scale(0.92) translateY(8px);
   }
 }
+
+/* solo objective (sprint/marathon) finishing stats */
+.objStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  width: 100%;
+  margin: 2px 0 4px;
+}
+.stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.stat dt {
+  font-family: 'Chakra Petch', sans-serif;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  opacity: 0.6;
+}
+.stat dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #fff;
+}

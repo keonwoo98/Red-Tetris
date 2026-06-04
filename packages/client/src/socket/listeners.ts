@@ -25,7 +25,17 @@ export const bindSocketListeners = (dispatch: AppDispatch, getState: () => RootS
   });
 
   socket.on('host:changed', (p) => dispatch(lobbyActions.hostChanged({ hostId: p.hostId })));
-  socket.on('game:started', (p) => dispatch(gameActions.startGame({ seed: p.seed, mode: p.mode })));
+  socket.on('game:started', (p) =>
+    dispatch(
+      gameActions.startGame({
+        seed: p.seed,
+        mode: p.mode,
+        // objective is client-local (solo win goal); stamp the wall-clock start for the time attack
+        objective: getState().lobby.objective,
+        startedAtMs: Date.now(),
+      }),
+    ),
+  );
   socket.on('penalty:apply', (p) =>
     dispatch(gameActions.applyPenalty({ n: p.count, fromId: p.fromId, fromName: p.fromName })),
   );

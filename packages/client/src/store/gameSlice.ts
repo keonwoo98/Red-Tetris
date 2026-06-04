@@ -12,6 +12,7 @@ import {
   SCORE_TABLE,
   SOFT_DROP_POINTS,
   type GameMode,
+  type SoloObjective,
 } from '@shared/constants';
 import { pieceAt } from '@shared/rng';
 import { cellsAt } from '@shared/tetrominoes';
@@ -53,6 +54,11 @@ export interface GameState {
   combo: number;
   b2b: number;
   mode: GameMode;
+  // bonus: solo objective (sprint/marathon). `endless` = no goal (default). startedAtMs is the
+  // client wall-clock start used for the time attack; objectiveResult is set on completion.
+  objective: SoloObjective;
+  startedAtMs: number;
+  objectiveResult: { kind: 'sprint' | 'marathon'; timeMs: number; lines: number; level: number; score: number } | null;
   // render-only: bumps `seq` each time lines clear so the board can replay a flash
   clearFx: {
     lines: number;
@@ -92,6 +98,9 @@ const freshState = (): GameState => ({
   combo: 0,
   b2b: 0,
   mode: 'classic',
+  objective: 'endless',
+  startedAtMs: 0,
+  objectiveResult: null,
   clearFx: null,
   dropFx: null,
   lockFx: null,
@@ -229,11 +238,21 @@ const gameSlice = createSlice({
   name: 'game',
   initialState: freshState(),
   reducers: {
-    startGame(s, a: PayloadAction<{ seed: number; mode?: GameMode }>) {
+    startGame(
+      s,
+      a: PayloadAction<{
+        seed: number;
+        mode?: GameMode;
+        objective?: SoloObjective;
+        startedAtMs?: number;
+      }>,
+    ) {
       const fresh = freshState();
       Object.assign(s, fresh);
       s.seed = a.payload.seed;
       s.mode = a.payload.mode ?? 'classic';
+      s.objective = a.payload.objective ?? 'endless';
+      s.startedAtMs = a.payload.startedAtMs ?? 0;
       s.status = 'playing';
       s.current = spawnPiece(pieceAt(a.payload.seed, 0));
       s.next = nextQueue(a.payload.seed, 1, PREVIEW_COUNT);
@@ -356,6 +375,19 @@ const gameSlice = createSlice({
     gameOver(s, a: PayloadAction<{ winnerId: string | null }>) {
       s.winnerId = a.payload.winnerId;
       s.status = 'gameover';
+    },
+    // solo objective reached (sprint/marathon): end the run as a WIN and record the finishing stats.
+    // The outbound middleware reports this like a top-out so the server ends the round + logs the score.
+    objectiveComplete(s, a: PayloadAction<{ timeMs: number }>) {
+      if (s.status !== 'playing' || s.objective === 'endless') return;
+      s.status = 'gameover';
+      s.objectiveResult = {
+        kind: s.objective,
+        timeMs: a.payload.timeMs,
+        lines: s.lines,
+        level: s.level,
+        score: s.score,
+      };
     },
     resetGame() {
       return freshState();

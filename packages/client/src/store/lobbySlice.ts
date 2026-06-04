@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { GameMode } from '@shared/constants';
+import type { GameMode, SoloObjective } from '@shared/constants';
 import type { GameStatus, PlayerDTO, RoomState } from '@shared/protocol';
 
 export interface LobbyState {
@@ -10,6 +10,7 @@ export interface LobbyState {
   players: PlayerDTO[];
   status: GameStatus;
   mode: GameMode;
+  objective: SoloObjective; // client-local solo win goal; ignored in multiplayer (last-standing wins)
   connection: 'idle' | 'connecting' | 'connected' | 'error';
   joinError: string | null;
 }
@@ -22,6 +23,7 @@ const initialState: LobbyState = {
   players: [],
   status: 'lobby',
   mode: 'classic',
+  objective: 'endless',
   connection: 'idle',
   joinError: null,
 };
@@ -67,6 +69,10 @@ const lobbySlice = createSlice({
     requestStart() {},
     requestRestart() {},
     requestSetMode(_s, _a: PayloadAction<GameMode>) {},
+    // client-local solo objective (no socket round-trip — solo is a single player's own choice)
+    requestSetObjective(s, a: PayloadAction<SoloObjective>) {
+      s.objective = a.payload;
+    },
     connectionError(s) {
       s.connection = 'error';
     },

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../hooks/redux';
 import { useGameLoop } from '../hooks/useGameLoop';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { useSoloObjective } from '../hooks/useSoloObjective';
 import { selectClearFx, selectGameStatus, selectIsAlive, selectOpponents } from '../store/selectors';
 import { Board } from './Board';
 import { ClearPopup } from './ClearPopup';
@@ -11,6 +12,7 @@ import { GameOverOverlay } from './GameOverOverlay';
 import { GarbageMeter } from './GarbageMeter';
 import { HoldPiece } from './HoldPiece';
 import { NextQueue } from './NextQueue';
+import { ObjectiveHUD } from './ObjectiveHUD';
 import { OpponentsPanel } from './OpponentsPanel';
 import { ScoreHUD } from './ScoreHUD';
 import styles from './GameView.module.css';
@@ -25,6 +27,7 @@ export const GameView = () => {
 
   useGameLoop();
   useKeyboard(alive && status === 'playing');
+  useSoloObjective();
 
   const aliveCount = opponents.filter((o) => o.alive).length + (alive ? 1 : 0);
   const total = opponents.length + 1;
@@ -52,6 +55,7 @@ export const GameView = () => {
       <div className={styles.grid}>
         <aside className={styles.leftRail}>
           <HoldPiece />
+          <ObjectiveHUD />
           <ScoreHUD />
         </aside>
         <section className={styles.center}>

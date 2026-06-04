@@ -313,3 +313,37 @@ describe('hold', () => {
     expect(fresh.canHold).toBe(true);
   });
 });
+
+describe('solo objective (bonus)', () => {
+  it('startGame applies the objective + start timestamp, defaulting to endless', () => {
+    const s = reducer(init(), gameActions.startGame({ seed: 1, objective: 'sprint', startedAtMs: 999 }));
+    expect(s.objective).toBe('sprint');
+    expect(s.startedAtMs).toBe(999);
+    expect(reducer(init(), gameActions.startGame({ seed: 1 })).objective).toBe('endless');
+  });
+
+  it('objectiveComplete ends the run as a win and records the finishing stats', () => {
+    const after = reducer(
+      playing({ objective: 'sprint', lines: 40, level: 5, score: 1234 }),
+      gameActions.objectiveComplete({ timeMs: 83450 }),
+    );
+    expect(after.status).toBe('gameover');
+    expect(after.objectiveResult).toEqual({
+      kind: 'sprint',
+      timeMs: 83450,
+      lines: 40,
+      level: 5,
+      score: 1234,
+    });
+  });
+
+  it('objectiveComplete is inert in endless mode and when not playing', () => {
+    expect(
+      reducer(playing({ objective: 'endless' }), gameActions.objectiveComplete({ timeMs: 1 }))
+        .objectiveResult,
+    ).toBeNull();
+    expect(
+      reducer(init(), gameActions.objectiveComplete({ timeMs: 1 })).status,
+    ).toBe('idle');
+  });
+});

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { OBJECTIVE_GOAL } from '@shared/constants';
 import type { LeaderboardEntry } from '@shared/protocol';
+import { formatTime } from '../format';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
 import { socket } from '../socket/socket';
 import { lobbyActions } from '../store/lobbySlice';
@@ -26,6 +28,9 @@ export const GameOverOverlay = () => {
   const isHost = useAppSelector(selectIsHost);
   const opponents = useAppSelector(selectOpponents);
   const placementOrder = useAppSelector(selectPlacementOrder);
+  const objResult = useAppSelector((s) => s.game.objectiveResult);
+  const objective = useAppSelector((s) => s.game.objective);
+  const lines = useAppSelector((s) => s.game.lines);
   const dispatch = useAppDispatch();
   const [board, setBoard] = useState<LeaderboardEntry[]>([]);
 
@@ -35,12 +40,25 @@ export const GameOverOverlay = () => {
 
   const won = winnerId !== null && winnerId === myId;
   const multi = opponents.length > 0;
-  const tag = won ? 'VICTORY' : winnerId === null ? 'GAME OVER' : 'DEFEAT';
-  const sub = won
-    ? 'last pilot standing'
-    : winnerId === null
-      ? 'the field is clear'
-      : 'better luck next round';
+  // a completed solo objective is a WIN, shown with its own headline + finishing stats
+  const goal = OBJECTIVE_GOAL[objective];
+  const celebrate = won || objResult !== null;
+  const tag = objResult
+    ? `${objResult.kind === 'sprint' ? 'SPRINT' : 'MARATHON'} CLEAR!`
+    : won
+      ? 'VICTORY'
+      : winnerId === null
+        ? 'GAME OVER'
+        : 'DEFEAT';
+  const sub = objResult
+    ? formatTime(objResult.timeMs)
+    : won
+      ? 'last pilot standing'
+      : winnerId === null
+        ? !multi && goal !== null
+          ? `${lines} / ${goal} lines`
+          : 'the field is clear'
+        : 'better luck next round';
 
   // survival standings: winner #1, then opponents by reverse elimination, me slotted in
   const standings: Standing[] = [];
@@ -61,11 +79,32 @@ export const GameOverOverlay = () => {
 
   return (
     <div className={styles.overlay} role="dialog" aria-label="Game over">
-      {won && <Confetti />}
-      <div className={styles.card} data-won={won}>
-        {won && <div className={styles.crown} aria-hidden />}
+      {celebrate && <Confetti />}
+      <div className={styles.card} data-won={celebrate}>
+        {celebrate && <div className={styles.crown} aria-hidden />}
         <div className={styles.tag}>{tag}</div>
         <p className={styles.sub}>{sub}</p>
+
+        {objResult && (
+          <dl className={styles.objStats}>
+            <div className={styles.stat}>
+              <dt>TIME</dt>
+              <dd>{formatTime(objResult.timeMs)}</dd>
+            </div>
+            <div className={styles.stat}>
+              <dt>LINES</dt>
+              <dd>{objResult.lines}</dd>
+            </div>
+            <div className={styles.stat}>
+              <dt>LEVEL</dt>
+              <dd>{objResult.level}</dd>
+            </div>
+            <div className={styles.stat}>
+              <dt>SCORE</dt>
+              <dd>{objResult.score.toLocaleString()}</dd>
+            </div>
+          </dl>
+        )}
 
         {multi && standings.length > 0 && (
           <ol className={styles.standings}>
