@@ -24,7 +24,6 @@ import {
   hardDrop as engineHardDrop,
   isGrounded,
   lockPiece,
-  lockStep,
   moveDown,
   moveLeft as engineMoveLeft,
   moveRight as engineMoveRight,
@@ -40,8 +39,7 @@ export interface GameState {
   pieceIndex: number;
   next: PieceType[];
   status: 'idle' | 'playing' | 'gameover';
-  wasGroundedLastFrame: boolean;
-  lockResets: number; // move/rotate re-arms used since grounding (anti-stall cap)
+  lockResets: number; // grounded move/rotate re-arms used since landing; bumps restart the lock timer (anti-stall cap)
   lastWasRotation: boolean; // true if the last successful action was a rotation (for T-spin)
   pendingPenalty: number;
   lockEvent: { board: Board; cleared: number; pieceIndex: number } | null;
@@ -81,7 +79,6 @@ const freshState = (): GameState => ({
   pieceIndex: 0,
   next: [],
   status: 'idle',
-  wasGroundedLastFrame: false,
   lockResets: 0,
   lastWasRotation: false,
   pendingPenalty: 0,
@@ -108,17 +105,18 @@ type Draft = WritableDraft<GameState>;
 const playable = (s: Draft): boolean => s.status === 'playing' && s.alive && s.current !== null;
 
 /**
- * After a move/rotate: if the piece floated free, re-arm and clear the reset budget.
- * If it's still grounded, a move/rotate also re-arms the one-tick grace (up to MAX_LOCK_RESETS)
- * so players can tuck pieces and spin into gaps near the floor — modern lock-delay feel.
+ * After a move/rotate, keep the lock-delay timer honest. `lockResets` is what the loop watches:
+ * - floated free → reset the budget to 0 (the timer is off while airborne).
+ * - still grounded and under the cap → bump it, which restarts the fixed lock-delay timer so the
+ *   piece can be tucked or spun into a gap (modern lock-delay feel).
+ * - at the cap → leave it unchanged so the timer is NOT restarted and the piece locks on schedule
+ *   (anti-stall: you can't wiggle forever).
  */
 const reArm = (s: Draft): void => {
   if (!s.current) return;
   if (!isGrounded(s.board as Board, s.current as ActivePiece)) {
-    s.wasGroundedLastFrame = false;
     s.lockResets = 0;
-  } else if (s.wasGroundedLastFrame && s.lockResets < MAX_LOCK_RESETS) {
-    s.wasGroundedLastFrame = false;
+  } else if (s.lockResets < MAX_LOCK_RESETS) {
     s.lockResets += 1;
   }
 };
@@ -222,7 +220,6 @@ const commitLock = (s: Draft): void => {
     return;
   }
   s.current = nextPiece;
-  s.wasGroundedLastFrame = false;
   s.lockResets = 0;
   s.lastWasRotation = false;
   s.canHold = true; // re-arm hold for the new piece
@@ -312,27 +309,26 @@ const gameSlice = createSlice({
         s.current = swapped;
       }
       s.canHold = false;
-      s.wasGroundedLastFrame = false;
       s.lockResets = 0;
       s.lastWasRotation = false;
     },
+    // gravity only: fall one row if airborne, otherwise do nothing — locking is the lock-delay
+    // timer's job (`lockDown`), so a grounded piece is NOT forced down on the next gravity tick.
     tick(s) {
       if (!playable(s)) return;
-      const out = lockStep(s.board as Board, {
-        piece: s.current as ActivePiece,
-        wasGroundedLastFrame: s.wasGroundedLastFrame,
-      });
-      if (out.kind === 'lock') {
-        commitLock(s);
-      } else {
-        if (out.kind === 'falling') {
-          // a natural gravity fall clears the T-spin flag; only a rotation right before lock counts
-          s.lastWasRotation = false;
-          if (s.softDropActive) s.score += SOFT_DROP_POINTS; // soft-drop cells score while held
-        }
-        s.current = out.state.piece;
-        s.wasGroundedLastFrame = out.state.wasGroundedLastFrame;
+      const before = (s.current as ActivePiece).y;
+      const moved = moveDown(s.board as Board, s.current as ActivePiece);
+      if (moved.y > before) {
+        s.current = moved;
+        s.lastWasRotation = false; // a natural gravity fall is not a spin lock
+        if (s.softDropActive) s.score += SOFT_DROP_POINTS; // soft-drop cells score while held
       }
+    },
+    // lock-delay timer expired (or a hard caller wants it): lock only if still resting on the stack.
+    // If the piece floated free (a line cleared under it, etc.) it keeps falling — the timer was stale.
+    lockDown(s) {
+      if (!playable(s)) return;
+      if (isGrounded(s.board as Board, s.current as ActivePiece)) commitLock(s);
     },
     applyPenalty(s, a: PayloadAction<{ n: number; fromId?: string; fromName?: string }>) {
       if (s.status !== 'playing') return;

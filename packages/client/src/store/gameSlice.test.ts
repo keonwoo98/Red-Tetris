@@ -44,20 +44,23 @@ describe('movement reducers', () => {
     expect(reducer(init(), gameActions.moveLeft())).toEqual(init());
   });
 
-  it('re-arms the lock delay when a grounded move stays grounded (tuck window)', () => {
+  it('bumps lockResets when a grounded move stays grounded (restarts the lock timer → tuck window)', () => {
     const landed = engineHardDrop(createBoard(), spawnPiece('O'));
-    const s = playing({ current: landed, wasGroundedLastFrame: true, lockResets: 0 });
-    const after = reducer(s, gameActions.moveLeft());
-    expect(after.wasGroundedLastFrame).toBe(false); // grace handed back so the piece can be tucked
+    const after = reducer(playing({ current: landed, lockResets: 0 }), gameActions.moveLeft());
     expect(after.lockResets).toBe(1);
   });
 
-  it('stops re-arming once the reset budget is spent (anti-stall)', () => {
+  it('stops bumping lockResets once the reset budget is spent (anti-stall)', () => {
     const landed = engineHardDrop(createBoard(), spawnPiece('O'));
-    const s = playing({ current: landed, wasGroundedLastFrame: true, lockResets: MAX_LOCK_RESETS });
-    const after = reducer(s, gameActions.moveLeft());
-    expect(after.wasGroundedLastFrame).toBe(true); // budget exhausted → the lock stays armed
+    const after = reducer(
+      playing({ current: landed, lockResets: MAX_LOCK_RESETS }),
+      gameActions.moveLeft(),
+    );
     expect(after.lockResets).toBe(MAX_LOCK_RESETS);
+  });
+
+  it('clears the reset budget when a move leaves the piece airborne', () => {
+    expect(reducer(playing({ lockResets: 5 }), gameActions.moveLeft()).lockResets).toBe(0);
   });
 });
 
@@ -98,25 +101,31 @@ describe('hardDrop + commitLock', () => {
   });
 });
 
-describe('tick (gravity + lock delay)', () => {
+describe('gravity tick + lock delay', () => {
   it('falls one row when airborne', () => {
     const s = playing();
     expect(reducer(s, gameActions.tick()).current!.y).toBe(s.current!.y + 1);
   });
 
-  it('arms the grace on first grounded frame, locks on the next', () => {
+  it('does not move or lock a grounded piece on a gravity tick (lock is the timer’s job)', () => {
     const landed = engineHardDrop(createBoard(), spawnPiece('S'));
-    const armed = reducer(
-      playing({ current: landed, wasGroundedLastFrame: false }),
-      gameActions.tick(),
-    );
-    expect(armed.wasGroundedLastFrame).toBe(true);
-    expect(armed.pieceIndex).toBe(0);
-    const locked = reducer(
-      playing({ current: landed, wasGroundedLastFrame: true }),
-      gameActions.tick(),
-    );
-    expect(locked.pieceIndex).toBe(1);
+    const after = reducer(playing({ current: landed }), gameActions.tick());
+    expect(after.current!.y).toBe(landed.y); // stays put
+    expect(after.pieceIndex).toBe(0); // not locked by gravity
+  });
+
+  it('lockDown locks a grounded piece and spawns the next', () => {
+    const landed = engineHardDrop(createBoard(), spawnPiece('S'));
+    const after = reducer(playing({ current: landed }), gameActions.lockDown());
+    expect(after.pieceIndex).toBe(1);
+    expect(after.lockEvent).not.toBeNull();
+  });
+
+  it('lockDown is a no-op when the piece is still airborne (stale timer)', () => {
+    const s = playing(); // spawn piece is airborne
+    const after = reducer(s, gameActions.lockDown());
+    expect(after.pieceIndex).toBe(0);
+    expect(after.current).toEqual(s.current);
   });
 });
 

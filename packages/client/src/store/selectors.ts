@@ -43,9 +43,12 @@ export const selectOpponents = createSelector(
   (ids, byId): OpponentView[] => ids.map((id) => byId[id]).filter((o): o is OpponentView => Boolean(o)),
 );
 
-/** True when the active piece is resting on the stack/floor — used to hold lock delay open during soft drop. */
+/** True when the active piece is resting on the stack/floor — arms the fixed lock-delay timer. */
 export const selectIsGrounded = createSelector(
   (s: RootState) => s.game.board,
   (s: RootState) => s.game.current,
   (board, current) => current !== null && isGrounded(board, current),
 );
+
+/** Re-arm counter; each bump (a grounded move/rotate) restarts the lock-delay timer in the loop. */
+export const selectLockResets = (s: RootState): number => s.game.lockResets;
