@@ -187,7 +187,7 @@ describe('socket integration', () => {
     expect(entries[0]).toEqual({ name: 'alice', score: 4200 });
   });
 
-  it('I12: a mid-game disconnect does NOT end the round during the reconnect grace', async () => {
+  it('I12: a mid-game disconnect does NOT end the round (only top-out / leave do)', async () => {
     const a = connect();
     await join(a, 'neon', 'alice');
     const b = connect();
@@ -200,8 +200,8 @@ describe('socket integration', () => {
     a.on('game:over', () => {
       gameOver = true;
     });
-    b.disconnect(); // transient drop mid-game
-    await wait(700); // well inside the 8s grace window
-    expect(gameOver).toBe(false); // round must NOT have resolved yet
+    b.disconnect(); // transient drop mid-game (tab throttle/background)
+    await wait(700);
+    expect(gameOver).toBe(false); // a disconnect never resolves the round
   });
 });

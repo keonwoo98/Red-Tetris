@@ -20,7 +20,19 @@ const bindInbound = (dispatch: AppDispatch, getState: () => RootState): void => 
   if (bound) return; // store is created once; guard against accidental re-binding (HMR)
   bound = true;
 
-  socket.on('connect', () => dispatch(lobbyActions.connecting()));
+  socket.on('connect', () => {
+    const { room, myName, myId } = getState().lobby;
+    // reconnect (we already had an identity) → re-join to reattach to our slot and resume the round.
+    // Initial connect has no myId yet, so the normal setIdentity→join flow handles the first join.
+    if (room && myName && myId) {
+      socket.emit('join', { room, name: myName }, (res) => {
+        if (res.ok) dispatch(lobbyActions.joined(res.data));
+        else dispatch(lobbyActions.joinRejected({ reason: res.error.message }));
+      });
+    } else {
+      dispatch(lobbyActions.connecting());
+    }
+  });
 
   socket.on('room:state', (s: RoomState) => {
     dispatch(lobbyActions.roomState(s));
@@ -68,7 +80,9 @@ const bindInbound = (dispatch: AppDispatch, getState: () => RootState): void => 
     if (e.fatal) dispatch(lobbyActions.joinRejected({ reason: e.message }));
   });
 
-  socket.on('disconnect', () => dispatch(lobbyActions.connectionError()));
+  // a transient drop (tab throttle/background, blip) → show a reconnecting state, not the fatal
+  // error screen; socket.io auto-reconnects and the 'connect' handler above re-joins us.
+  socket.on('disconnect', () => dispatch(lobbyActions.connecting()));
 };
 
 export const socketMiddleware: Middleware = (api) => {
