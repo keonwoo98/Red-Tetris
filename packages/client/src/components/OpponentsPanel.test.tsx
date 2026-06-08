@@ -5,15 +5,15 @@ import { OpponentSpectrum, OpponentsPanel } from './OpponentsPanel';
 import { makeStore, renderWith } from './test-utils';
 
 describe('<OpponentSpectrum>', () => {
-  it('renders the name and 10 spectrum bars', () => {
+  it('renders the name and one filled block per column-height cell (discrete silhouette)', () => {
+    const spectrum = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     const { getByText, container } = render(
-      <OpponentSpectrum
-        opp={{ id: 'a', name: 'bob', alive: true, spectrum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], koSeq: 0 }}
-      />,
+      <OpponentSpectrum opp={{ id: 'a', name: 'bob', alive: true, spectrum, koSeq: 0 }} />,
     );
     expect(getByText('bob')).toBeInTheDocument();
-    const cols = container.querySelectorAll('[data-zone]');
-    expect(cols).toHaveLength(10);
+    // a filled block carries data-zone; the count equals the sum of the column heights
+    const filled = container.querySelectorAll('[data-zone]');
+    expect(filled).toHaveLength(spectrum.reduce((a, b) => a + b, 0)); // 55
   });
 });
 

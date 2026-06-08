@@ -1,3 +1,4 @@
+import { BOARD_HEIGHT } from '@shared/constants';
 import { useAppSelector } from '../hooks/redux';
 import type { OpponentView } from '../store/opponentsSlice';
 import { selectLastAttack, selectOpponents } from '../store/selectors';
@@ -30,12 +31,20 @@ export const OpponentSpectrum = ({
         <span className={styles.name}>{opp.name}</span>
         {!opp.alive && <span className={styles.out}>OUT</span>}
       </div>
-      <div className={styles.well} role="img" aria-label={`${opp.name} field`}>
-        {opp.spectrum.map((h, c) => (
-          <div key={c} className={styles.col} data-zone={zone(h)}>
-            <div className={styles.fill} style={{ height: `${(h / 20) * 100}%` }} />
-          </div>
-        ))}
+      <div className={styles.well} role="img" aria-label={`${opp.name} field silhouette`}>
+        {/* spec spectrum = per-column height, rendered as discrete blocks (bottom-up) */}
+        {Array.from({ length: BOARD_HEIGHT }, (_, r) =>
+          opp.spectrum.map((h, c) => {
+            const filled = BOARD_HEIGHT - r <= h;
+            return (
+              <div
+                key={`${r}-${c}`}
+                className={filled ? styles.block : styles.gap}
+                data-zone={filled ? zone(h) : undefined}
+              />
+            );
+          }),
+        ).flat()}
         <div className={styles.deathline} aria-hidden />
       </div>
     </div>
