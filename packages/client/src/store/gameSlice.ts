@@ -158,26 +158,14 @@ const isTSpin = (board: Board, p: ActivePiece): boolean => {
 /** Bonus points for a T-spin by lines cleared (index 0..3), multiplied by the current level. */
 const TSPIN_SCORE = [400, 800, 1200, 1600] as const;
 
-/** Lock the current piece into the board, flushing pending penalty first, then spawn the next. */
+/** Lock the current piece, clear lines, THEN apply incoming garbage, then spawn the next. */
 const commitLock = (s: Draft): void => {
   if (s.current === null || s.seed === null) return;
 
-  // 1. flush queued penalty BEFORE locking so the piece sees the shifted stack
-  if (s.pendingPenalty > 0) {
-    const { board, toppedOut } = addPenaltyLines(s.board as Board, s.pendingPenalty);
-    s.board = board;
-    s.pendingPenalty = 0;
-    if (toppedOut || collides(board, s.current as ActivePiece)) {
-      s.lockEvent = { board, cleared: 0, pieceIndex: s.pieceIndex };
-      topOut(s);
-      return;
-    }
-  }
-
-  // 2. recognise a T-spin against the resting stack (the last action must have been a real rotation)
+  // 1. recognise a T-spin against the resting stack (the last action must have been a real rotation)
   const tSpin = s.lastWasRotation && isTSpin(s.board as Board, s.current as ActivePiece);
 
-  // 3. lock + clear
+  // 2. lock + clear
   const lockedCells: [number, number][] = cellsAt(s.current as ActivePiece)
     .filter(([, r]) => r >= 0)
     .map(([c, r]) => [c, r]);
@@ -218,13 +206,29 @@ const commitLock = (s: Draft): void => {
   } else {
     s.combo = 0;
   }
+  // 3. apply incoming garbage AFTER locking — it lifts the WHOLE stack (including the piece just
+  //    placed) from the bottom. You top out only if a block is forced above the top, NOT because the
+  //    not-yet-locked piece "collided" with the shifted stack (that old order ended games at ~half height).
+  let board = cleared;
+  let buried = false;
+  if (s.pendingPenalty > 0) {
+    const res = addPenaltyLines(cleared, s.pendingPenalty);
+    board = res.board;
+    s.pendingPenalty = 0;
+    buried = res.toppedOut;
+  }
+  s.board = board;
   s.pieceIndex += 1;
-  s.lockEvent = { board: cleared, cleared: n, pieceIndex: s.pieceIndex };
+  s.lockEvent = { board, cleared: n, pieceIndex: s.pieceIndex };
+  if (buried) {
+    topOut(s);
+    return;
+  }
 
   // 4. spawn the next piece (deterministic); top out if it cannot enter
   const nextPiece = spawnPiece(pieceAt(s.seed, s.pieceIndex));
   s.next = nextQueue(s.seed, s.pieceIndex + 1, PREVIEW_COUNT);
-  if (collides(cleared, nextPiece)) {
+  if (collides(board, nextPiece)) {
     topOut(s);
     return;
   }

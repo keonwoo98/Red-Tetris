@@ -90,14 +90,25 @@ describe('hardDrop + commitLock', () => {
     expect(reducer(locked, gameActions.clearLockEvent()).lockEvent).toBeNull();
   });
 
-  it('flushes pending penalty before locking and tops out on overlap', () => {
+  it('tops out only when incoming garbage overflows the top of the stack', () => {
+    const board = createBoard();
+    board[2]![0] = 1 as Cell; // a block near the very top
+    const after = reducer(
+      playing({ board, pendingPenalty: 3, current: spawnPiece('I') }),
+      gameActions.hardDrop(),
+    );
+    expect(after.status).toBe('gameover'); // 3 garbage rows shove the row-2 block above the top
+    expect(after.lockEvent).not.toBeNull();
+  });
+
+  it('does NOT top out when garbage fits — it lifts the stack, never buries the placed piece', () => {
+    // regression: empty board + I piece + 3 garbage = 4 rows; a half-empty board must NOT end the game
     const after = reducer(
       playing({ pendingPenalty: 3, current: spawnPiece('I') }),
       gameActions.hardDrop(),
     );
-    expect(after.status).toBe('gameover');
-    expect(after.lockEvent).not.toBeNull();
-    expect(after.lockEvent!.cleared).toBe(0);
+    expect(after.status).toBe('playing');
+    expect(after.pendingPenalty).toBe(0); // the garbage was applied
   });
 });
 
