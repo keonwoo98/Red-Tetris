@@ -33,9 +33,12 @@ export const GameRoute = () => {
     };
   }, [room, player, dispatch]);
 
-  // after a host relaunch the room returns to 'lobby'; drop a stale game-over so the lobby shows
+  // after a host relaunch the room returns to 'lobby' while the local game is still 'gameover';
+  // reset so the lobby shows again. Guard on 'gameover' ONLY (not 'playing') — otherwise the brief
+  // window between game:started (game→playing) and the room:state broadcast (room→playing) would
+  // wipe the freshly-started game and leave an empty board.
   useEffect(() => {
-    if (status === 'lobby' && gameStatus !== 'idle') dispatch(gameActions.resetGame());
+    if (status === 'lobby' && gameStatus === 'gameover') dispatch(gameActions.resetGame());
   }, [status, gameStatus, dispatch]);
 
   if (!room || !player) return <Navigate to="/" replace />;
@@ -64,9 +67,10 @@ export const GameRoute = () => {
     );
   }
 
-  // Show the board while playing or to a finished player (game-over overlay). A fresh joiner who
-  // lands in a room that has ENDED (status 'ended', their own game still 'idle') sees the lobby and
-  // waits for the host to relaunch — so new players can join between rounds (eval: "Relaunch a game").
-  const inGame = status === 'playing' || gameStatus === 'gameover';
+  // Show the board as soon as MY game is live or finished (covers the start race where game:started
+  // arrives before room:state). A fresh joiner who lands in a room that has ENDED (their own game
+  // still 'idle') sees the lobby and waits for the host to relaunch (eval: "Relaunch a game").
+  const inGame =
+    gameStatus === 'playing' || gameStatus === 'gameover' || status === 'playing';
   return inGame ? <GameView /> : <Lobby />;
 };
