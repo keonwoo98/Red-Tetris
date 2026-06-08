@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { Server, Socket } from 'socket.io';
-import { SPECTRUM_LENGTH } from '@red-tetris/shared';
+import { BOARD_HEIGHT, BOARD_WIDTH } from '@red-tetris/shared';
 import type {
   Ack,
   ClientToServerEvents,
@@ -136,7 +136,13 @@ function handleSpectrum(io: IO, registry: RoomManager, socket: AppSocket, p: Spe
   const { room, playerId } = socket.data;
   const g = gameOf(registry, socket);
   if (!room || !playerId || !g) return;
-  if (!Array.isArray(p?.spectrum) || p.spectrum.length !== SPECTRUM_LENGTH) return;
+  if (
+    !Array.isArray(p?.spectrum) ||
+    p.spectrum.length !== BOARD_HEIGHT ||
+    !p.spectrum.every((row) => Array.isArray(row) && row.length === BOARD_WIDTH)
+  ) {
+    return;
+  }
 
   const dto = g.updateSpectrum(playerId, p.spectrum);
   if (dto) socket.to(room).emit('spectrum:update', { id: dto.id, name: dto.name, spectrum: dto.spectrum });

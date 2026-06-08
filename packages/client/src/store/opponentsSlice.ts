@@ -1,6 +1,9 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { BOARD_HEIGHT, BOARD_WIDTH } from '@shared/constants';
 import type { OpponentDTO } from '@shared/protocol';
-import type { Spectrum } from '@shared/types';
+
+const emptyField = (): number[][] =>
+  Array.from({ length: BOARD_HEIGHT }, () => new Array<number>(BOARD_WIDTH).fill(0));
 
 /** Opponent plus client-only render state (KO animation trigger). */
 export interface OpponentView extends OpponentDTO {
@@ -36,7 +39,7 @@ const opponentsSlice = createSlice({
       s.ids = ids;
     },
     // Upsert — creates the entry if missing (fixes the room:state/spectrum:update race).
-    spectrumUpdate(s, a: PayloadAction<{ id: string; name: string; spectrum: Spectrum }>) {
+    spectrumUpdate(s, a: PayloadAction<{ id: string; name: string; spectrum: number[][] }>) {
       const { id, name, spectrum } = a.payload;
       const prev = s.byId[id];
       s.byId[id] = {
@@ -59,6 +62,17 @@ const opponentsSlice = createSlice({
     opponentLeft(s, a: PayloadAction<{ id: string }>) {
       delete s.byId[a.payload.id];
       s.ids = s.ids.filter((i) => i !== a.payload.id);
+    },
+    // new round: keep the roster but wipe each rival's field + revive them (clears stale data/KO)
+    roundReset(s) {
+      for (const id of s.ids) {
+        const o = s.byId[id];
+        if (o) {
+          o.spectrum = emptyField();
+          o.alive = true;
+        }
+      }
+      s.placementOrder = [];
     },
     clearOpponents() {
       return initialState;

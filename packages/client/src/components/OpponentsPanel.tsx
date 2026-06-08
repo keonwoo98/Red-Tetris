@@ -1,10 +1,16 @@
-import { BOARD_HEIGHT } from '@shared/constants';
+import { COLOR_HEX } from '@shared/constants';
 import { useAppSelector } from '../hooks/redux';
 import type { OpponentView } from '../store/opponentsSlice';
 import { selectLastAttack, selectOpponents } from '../store/selectors';
 import styles from './OpponentsPanel.module.css';
 
-const zone = (h: number): string => (h >= 16 ? 'crit' : h >= 12 ? 'high' : h >= 8 ? 'mid' : 'low');
+/** Highest filled row of the field → stack height (0..20), for the danger glow. */
+const maxHeight = (field: number[][]): number => {
+  for (let r = 0; r < field.length; r++) {
+    if (field[r]?.some((v) => v !== 0)) return field.length - r;
+  }
+  return 0;
+};
 
 export const OpponentSpectrum = ({
   opp,
@@ -13,8 +19,7 @@ export const OpponentSpectrum = ({
   opp: OpponentView;
   attackSeq?: number | undefined;
 }) => {
-  const maxH = opp.spectrum.length ? Math.max(...opp.spectrum) : 0;
-  const danger = opp.alive && maxH >= 16;
+  const danger = opp.alive && maxHeight(opp.spectrum) >= 16;
 
   return (
     <div className={`${styles.card} ${opp.alive ? '' : styles.dead} ${danger ? styles.cardDanger : ''}`}>
@@ -31,20 +36,17 @@ export const OpponentSpectrum = ({
         <span className={styles.name}>{opp.name}</span>
         {!opp.alive && <span className={styles.out}>OUT</span>}
       </div>
-      <div className={styles.well} role="img" aria-label={`${opp.name} field silhouette`}>
-        {/* spec spectrum = per-column height, rendered as discrete blocks (bottom-up) */}
-        {Array.from({ length: BOARD_HEIGHT }, (_, r) =>
-          opp.spectrum.map((h, c) => {
-            const filled = BOARD_HEIGHT - r <= h;
-            return (
-              <div
-                key={`${r}-${c}`}
-                className={filled ? styles.block : styles.gap}
-                data-zone={filled ? zone(h) : undefined}
-              />
-            );
-          }),
-        ).flat()}
+      <div className={styles.well} role="img" aria-label={`${opp.name} field`}>
+        {/* a true mini-board: each cell painted with its real color (0 empty, 1-7 piece, 8 garbage) */}
+        {opp.spectrum.flatMap((row, r) =>
+          row.map((v, c) => (
+            <div
+              key={`${r}-${c}`}
+              className={styles.cell}
+              style={v ? { background: COLOR_HEX[v] } : undefined}
+            />
+          )),
+        )}
         <div className={styles.deathline} aria-hidden />
       </div>
     </div>

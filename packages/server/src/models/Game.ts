@@ -1,12 +1,5 @@
 import { pieceAt } from '@red-tetris/shared';
-import type {
-  GameMode,
-  GameStatus,
-  OpponentDTO,
-  PieceType,
-  RoomState,
-  Spectrum,
-} from '@red-tetris/shared';
+import type { GameMode, GameStatus, OpponentDTO, PieceType, RoomState } from '@red-tetris/shared';
 import { GameNotStartedError } from './errors.js';
 import { Piece } from './Piece.js';
 import { Player } from './Player.js';
@@ -188,7 +181,7 @@ export class Game {
   }
 
   // ---- spectrum --------------------------------------------------------
-  updateSpectrum(playerId: string, spectrum: Spectrum): OpponentDTO | null {
+  updateSpectrum(playerId: string, spectrum: number[][]): OpponentDTO | null {
     const p = this.find(playerId);
     if (!p) return null;
     p.setSpectrum(spectrum);

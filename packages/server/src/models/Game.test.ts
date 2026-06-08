@@ -155,13 +155,10 @@ describe('Game · attack & spectrum', () => {
   it('updateSpectrum stores and returns the opponent DTO; null for unknown id', () => {
     const g = mk();
     g.addPlayer('a', 'sa', 'alice');
-    const dto = g.updateSpectrum('a', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    expect(dto).toEqual({
-      id: 'a',
-      name: 'alice',
-      alive: true,
-      spectrum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    });
+    const field = Array.from({ length: 20 }, () => new Array<number>(10).fill(0));
+    field[19] = [1, 2, 3, 4, 5, 6, 7, 8, 0, 0];
+    const dto = g.updateSpectrum('a', field);
+    expect(dto).toEqual({ id: 'a', name: 'alice', alive: true, spectrum: field });
     expect(g.updateSpectrum('nope', [])).toBe(null);
   });
 

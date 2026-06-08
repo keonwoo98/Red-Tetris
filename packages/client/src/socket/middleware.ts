@@ -1,7 +1,6 @@
 import type { Middleware } from '@reduxjs/toolkit';
-import { FEATURES, SPECTRUM_LENGTH, type GameMode } from '@shared/constants';
+import { BOARD_HEIGHT, BOARD_WIDTH, FEATURES, type GameMode } from '@shared/constants';
 import type { OpponentDTO, RoomState } from '@shared/protocol';
-import { computeSpectrum } from '../engine';
 import type { AppDispatch, RootState } from '../store';
 import { gameActions } from '../store/gameSlice';
 import { lobbyActions } from '../store/lobbySlice';
@@ -37,20 +36,18 @@ const bindInbound = (dispatch: AppDispatch, getState: () => RootState): void => 
   socket.on('room:state', (s: RoomState) => {
     dispatch(lobbyActions.roomState(s));
     const myId = getState().lobby.myId;
+    const emptyField = (): number[][] =>
+      Array.from({ length: BOARD_HEIGHT }, () => new Array<number>(BOARD_WIDTH).fill(0));
     const opponents: OpponentDTO[] = s.players
       .filter((p) => p.id !== myId)
-      .map((p) => ({
-        id: p.id,
-        name: p.name,
-        alive: p.alive,
-        spectrum: new Array<number>(SPECTRUM_LENGTH).fill(0),
-      }));
+      .map((p) => ({ id: p.id, name: p.name, alive: p.alive, spectrum: emptyField() }));
     dispatch(opponentsActions.setOpponents(opponents));
   });
 
   socket.on('host:changed', (p) => dispatch(lobbyActions.hostChanged({ hostId: p.hostId })));
 
-  socket.on('game:started', (p) =>
+  socket.on('game:started', (p) => {
+    dispatch(opponentsActions.roundReset()); // clear last round's rival fields before the new game
     dispatch(
       gameActions.startGame({
         seed: p.seed,
@@ -59,8 +56,8 @@ const bindInbound = (dispatch: AppDispatch, getState: () => RootState): void => 
         objective: getState().lobby.objective,
         startedAtMs: Date.now(),
       }),
-    ),
-  );
+    );
+  });
 
   socket.on('penalty:apply', (p) =>
     dispatch(gameActions.applyPenalty({ n: p.count, fromId: p.fromId, fromName: p.fromName })),
@@ -137,7 +134,7 @@ export const socketMiddleware: Middleware = (api) => {
         pieceIndex: le.pieceIndex,
         linesCleared: le.cleared,
       });
-      socket.emit('spectrum:report', { spectrum: computeSpectrum(after.game.board) });
+      socket.emit('spectrum:report', { spectrum: after.game.board }); // full field for rival mini-boards
       api.dispatch(gameActions.clearLockEvent());
     }
 
@@ -149,13 +146,13 @@ export const socketMiddleware: Middleware = (api) => {
       a.type !== 'game/topOut'
     ) {
       socket.emit('player:topout', { atPieceIndex: after.game.pieceIndex });
-      socket.emit('spectrum:report', { spectrum: computeSpectrum(after.game.board) });
+      socket.emit('spectrum:report', { spectrum: after.game.board }); // full field for rival mini-boards
       if (FEATURES.SCORING) socket.emit('score:report', { score: after.game.score });
     }
 
     // penalty flushed between pieces (no lock) → report the new spectrum
     if (a.type === 'game/applyPenalty' && after.game.status === 'playing' && !after.game.lockEvent) {
-      socket.emit('spectrum:report', { spectrum: computeSpectrum(after.game.board) });
+      socket.emit('spectrum:report', { spectrum: after.game.board }); // full field for rival mini-boards
     }
 
     return result;

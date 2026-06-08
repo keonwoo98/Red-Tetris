@@ -145,11 +145,13 @@ describe('socket integration', () => {
     await join(a, 'neon', 'alice');
     const b = connect();
     await join(b, 'neon', 'bob');
-    const update = once<{ name: string; spectrum: number[] }>(b, 'spectrum:update');
-    a.emit('spectrum:report', { spectrum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] });
+    const field = Array.from({ length: 20 }, () => new Array<number>(10).fill(0));
+    field[19] = [1, 2, 3, 4, 5, 6, 7, 8, 0, 0];
+    const update = once<{ name: string; spectrum: number[][] }>(b, 'spectrum:update');
+    a.emit('spectrum:report', { spectrum: field });
     const u = await update;
     expect(u.name).toBe('alice');
-    expect(u.spectrum).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect(u.spectrum).toEqual(field);
   });
 
   it('I9: a topout decides last-standing and broadcasts game:over', async () => {

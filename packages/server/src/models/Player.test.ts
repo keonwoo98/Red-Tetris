@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import { Player } from './Player.js';
 
-const zeros = (): number[] => new Array(10).fill(0);
+const zeros = (): number[][] => Array.from({ length: 20 }, () => new Array<number>(10).fill(0));
+const sampleField = (): number[][] => {
+  const f = zeros();
+  f[19] = [1, 2, 3, 4, 5, 6, 7, 0, 0, 0]; // a few cells on the bottom row
+  return f;
+};
 
 describe('Player', () => {
   it('starts alive, not host, connected, empty spectrum', () => {
@@ -15,16 +20,17 @@ describe('Player', () => {
 
   it('setSpectrum stores a copy', () => {
     const p = new Player('1', 's', 'a');
-    const s = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+    const s = sampleField();
     p.setSpectrum(s);
     expect(p.spectrum).toEqual(s);
     expect(p.spectrum).not.toBe(s);
+    expect(p.spectrum[19]).not.toBe(s[19]); // rows are copied too
   });
 
   it('eliminate then resetForRound restores round state', () => {
     const p = new Player('1', 's', 'a');
     p.eliminate();
-    p.setSpectrum([5, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    p.setSpectrum(sampleField());
     p.currentPieceIndex = 9;
     expect(p.alive).toBe(false);
     p.resetForRound();

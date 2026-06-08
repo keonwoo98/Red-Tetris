@@ -1,7 +1,10 @@
-import { SPECTRUM_LENGTH } from '@red-tetris/shared';
-import type { OpponentDTO, PlayerDTO, Spectrum } from '@red-tetris/shared';
+import { BOARD_HEIGHT, BOARD_WIDTH } from '@red-tetris/shared';
+import type { OpponentDTO, PlayerDTO } from '@red-tetris/shared';
 
-const emptySpectrum = (): number[] => new Array<number>(SPECTRUM_LENGTH).fill(0);
+// the opponent "spectrum" carries the full 20×10 field (each cell = color id) so rivals render as
+// a real mini-board; the spec's column-height view is a subset of this (the topmost filled per col).
+const emptyField = (): number[][] =>
+  Array.from({ length: BOARD_HEIGHT }, () => new Array<number>(BOARD_WIDTH).fill(0));
 
 /** Per-participant authoritative server state. `id` is a stable UUID; `socketId` is volatile. */
 export class Player {
@@ -10,7 +13,7 @@ export class Player {
   readonly name: string;
   isHost = false;
   alive = true;
-  spectrum: number[] = emptySpectrum();
+  spectrum: number[][] = emptyField();
   currentPieceIndex = 0;
   lastSeen: number;
   connected = true;
@@ -26,8 +29,8 @@ export class Player {
     this.lastSeen = Date.now();
   }
 
-  setSpectrum(s: Spectrum): void {
-    this.spectrum = [...s];
+  setSpectrum(s: number[][]): void {
+    this.spectrum = s.map((row) => [...row]);
   }
 
   eliminate(): void {
@@ -36,7 +39,7 @@ export class Player {
 
   resetForRound(): void {
     this.alive = true;
-    this.spectrum = emptySpectrum();
+    this.spectrum = emptyField();
     this.currentPieceIndex = 0;
   }
 
@@ -56,6 +59,11 @@ export class Player {
   }
 
   toOpponentDTO(): OpponentDTO {
-    return { id: this.id, name: this.name, alive: this.alive, spectrum: [...this.spectrum] };
+    return {
+      id: this.id,
+      name: this.name,
+      alive: this.alive,
+      spectrum: this.spectrum.map((row) => [...row]),
+    };
   }
 }

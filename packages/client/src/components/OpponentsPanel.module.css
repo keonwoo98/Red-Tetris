@@ -152,24 +152,9 @@
   box-shadow: inset 0 0 0 1px var(--well-line);
 }
 
-.gap {
+.cell {
   border-radius: 1px;
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.block {
-  border-radius: 1px;
-  background: var(--safe);
-}
-.block[data-zone='mid'] {
-  background: var(--caution);
-}
-.block[data-zone='high'] {
-  background: var(--warn);
-}
-.block[data-zone='crit'] {
-  background: var(--danger);
-  box-shadow: 0 0 4px var(--danger);
+  background: rgba(255, 255, 255, 0.02); /* empty cell; filled cells get their real color inline */
 }
 
 .deathline {

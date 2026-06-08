@@ -2,7 +2,6 @@
 // every event name, payload type, and the typed socket maps. `playerId` is the
 // server-assigned stable UUID (NOT socket.id); the join ack returns it as `youId`.
 import type { GameMode } from './constants.js';
-import type { Spectrum } from './types.js';
 
 export type GameStatus = 'lobby' | 'playing' | 'ended';
 
@@ -17,7 +16,7 @@ export interface OpponentDTO {
   id: string;
   name: string;
   alive: boolean;
-  spectrum: Spectrum;
+  spectrum: number[][];
 }
 
 export interface RoomState {
@@ -71,12 +70,12 @@ export interface PenaltyApplyPayload {
   fromName: string;
 }
 export interface SpectrumReport {
-  spectrum: Spectrum;
+  spectrum: number[][];
 }
 export interface SpectrumUpdatePayload {
   id: string;
   name: string;
-  spectrum: Spectrum;
+  spectrum: number[][];
 }
 export interface TopoutReport {
   atPieceIndex: number;

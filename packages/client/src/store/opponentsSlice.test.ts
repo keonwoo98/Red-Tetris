@@ -3,7 +3,13 @@ import type { OpponentDTO } from '@shared/protocol';
 import reducer, { opponentsActions, type OpponentsState } from './opponentsSlice';
 
 const init = (): OpponentsState => reducer(undefined, { type: '@@INIT' });
-const opp = (id: string, spectrum = new Array(10).fill(0)): OpponentDTO => ({
+const emptyField = (): number[][] => Array.from({ length: 20 }, () => new Array<number>(10).fill(0));
+const fieldWith = (cell: number): number[][] => {
+  const f = emptyField();
+  f[19]![0] = cell;
+  return f;
+};
+const opp = (id: string, spectrum = emptyField()): OpponentDTO => ({
   id,
   name: id,
   alive: true,
@@ -17,16 +23,25 @@ describe('opponentsSlice', () => {
     expect(s.byId.a!.name).toBe('a');
   });
 
-  it('setOpponents preserves an existing spectrum', () => {
-    let s = reducer(init(), opponentsActions.spectrumUpdate({ id: 'a', name: 'a', spectrum: [5, 0, 0, 0, 0, 0, 0, 0, 0, 0] }));
+  it('setOpponents preserves an existing field', () => {
+    let s = reducer(init(), opponentsActions.spectrumUpdate({ id: 'a', name: 'a', spectrum: fieldWith(5) }));
     s = reducer(s, opponentsActions.setOpponents([opp('a')]));
-    expect(s.byId.a!.spectrum[0]).toBe(5);
+    expect(s.byId.a!.spectrum[19]![0]).toBe(5);
   });
 
   it('spectrumUpdate upserts a missing opponent', () => {
-    const s = reducer(init(), opponentsActions.spectrumUpdate({ id: 'z', name: 'zed', spectrum: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }));
+    const s = reducer(init(), opponentsActions.spectrumUpdate({ id: 'z', name: 'zed', spectrum: fieldWith(7) }));
     expect(s.ids).toContain('z');
-    expect(s.byId.z!.spectrum[9]).toBe(10);
+    expect(s.byId.z!.spectrum[19]![0]).toBe(7);
+  });
+
+  it('roundReset wipes each rival field and revives them', () => {
+    let s = reducer(init(), opponentsActions.spectrumUpdate({ id: 'a', name: 'a', spectrum: fieldWith(5) }));
+    s = reducer(s, opponentsActions.opponentGameOver({ id: 'a' }));
+    s = reducer(s, opponentsActions.roundReset());
+    expect(s.byId.a!.alive).toBe(true);
+    expect(s.byId.a!.spectrum[19]![0]).toBe(0);
+    expect(s.placementOrder).toEqual([]);
   });
 
   it('opponentGameOver flips alive, bumps koSeq, records placement', () => {
