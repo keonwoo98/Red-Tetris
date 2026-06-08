@@ -58,4 +58,11 @@ describe('lobbySlice', () => {
     expect(reducer(init(), lobbyActions.requestSetObjective('sprint')).objective).toBe('sprint');
     expect(reducer(init(), lobbyActions.requestSetObjective('marathon')).objective).toBe('marathon');
   });
+
+  it('leaderboardLoaded stores entries; requestLeaderboard is an inert trigger', () => {
+    expect(init().leaderboard).toEqual([]);
+    expect(reducer(init(), lobbyActions.requestLeaderboard())).toEqual(init());
+    const s = reducer(init(), lobbyActions.leaderboardLoaded([{ name: 'ace', score: 9000 }]));
+    expect(s.leaderboard).toEqual([{ name: 'ace', score: 9000 }]);
+  });
 });

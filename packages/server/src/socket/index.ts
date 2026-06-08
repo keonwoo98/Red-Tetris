@@ -52,7 +52,9 @@ function handleJoin(
   const g = registry.getOrCreate(room);
   const existing = g.findByName(name);
 
-  if (g.status === 'lobby') {
+  // New players may join in the lobby AND after a game has ENDED (between rounds, before the host
+  // relaunches). Only mid-game ('playing') is locked, where an existing name may merely reconnect.
+  if (g.status !== 'playing') {
     if (existing && existing.connected) {
       return ack({ ok: false, error: fail('NAME_TAKEN', `Name "${name}" is taken`) });
     }

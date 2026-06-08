@@ -19,9 +19,11 @@ opponents' names and a real-time **spectrum** (each column's highest block). The
 **last player standing** (the bonus score does not affect it). Solo and multiplayer are both
 supported.
 
-Join via URL: `http://<host>:<port>/<room>/<player_name>`. The first player to join a room is
-the **host** (controls start/restart); if the host leaves, the role migrates. No new players
-may join once a round has started.
+Join via URL: `http://<host>:<port>/<room>/<player_name>` (the path form, per the v5.2 subject).
+The legacy hash form `http://<host>:<port>/#<room>[<player_name>]` is also accepted and forwards to
+the same game. The first player to join a room is the **host** (controls start/restart); if the host
+leaves, the role migrates. New players cannot join mid-round, but **may join again once the game
+ends**, before the host relaunches.
 
 ---
 
@@ -30,8 +32,9 @@ may join once a round has started.
 ### Joining a game
 
 1. Open `http://<host>:<port>/` and enter a **ROOM** and a **PLAYER** name (letters, numbers,
-   `_`, `-`, max 16), then **ENTER ARENA**. You can also jump straight in with the URL
-   `http://<host>:<port>/<room>/<player>` (e.g. `localhost:5173/neon/alice`).
+   `_`, `-`, max 16), then **ENTER ARENA**. You can also jump straight in with either URL form:
+   the path `http://<host>:<port>/<room>/<player>` (e.g. `localhost:5173/neon/alice`) or the legacy
+   hash `http://<host>:<port>/#<room>[<player>]` (e.g. `localhost:5173/#neon[alice]`).
 2. In the **lobby**, the first player to join is the **host** and is the only one who can pick
    the mode and press **START GAME**; everyone else waits. If the host leaves, the role migrates
    to the next player automatically.

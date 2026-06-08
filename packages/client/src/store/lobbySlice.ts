@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { GameMode, SoloObjective } from '@shared/constants';
-import type { GameStatus, PlayerDTO, RoomState } from '@shared/protocol';
+import type { GameStatus, LeaderboardEntry, PlayerDTO, RoomState } from '@shared/protocol';
 
 export interface LobbyState {
   room: string | null;
@@ -11,6 +11,7 @@ export interface LobbyState {
   status: GameStatus;
   mode: GameMode;
   objective: SoloObjective; // client-local solo win goal; ignored in multiplayer (last-standing wins)
+  leaderboard: LeaderboardEntry[]; // persisted high scores (bonus); fetched via the socket middleware
   connection: 'idle' | 'connecting' | 'connected' | 'error';
   joinError: string | null;
 }
@@ -24,6 +25,7 @@ const initialState: LobbyState = {
   status: 'lobby',
   mode: 'classic',
   objective: 'endless',
+  leaderboard: [],
   connection: 'idle',
   joinError: null,
 };
@@ -72,6 +74,11 @@ const lobbySlice = createSlice({
     // client-local solo objective (no socket round-trip — solo is a single player's own choice)
     requestSetObjective(s, a: PayloadAction<SoloObjective>) {
       s.objective = a.payload;
+    },
+    // leaderboard: requestLeaderboard is a middleware trigger; leaderboardLoaded stores the reply
+    requestLeaderboard() {},
+    leaderboardLoaded(s, a: PayloadAction<LeaderboardEntry[]>) {
+      s.leaderboard = a.payload;
     },
     connectionError(s) {
       s.connection = 'error';

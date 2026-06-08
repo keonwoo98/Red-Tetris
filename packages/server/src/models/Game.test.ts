@@ -45,13 +45,16 @@ describe('Game · roster & host', () => {
     expect(g.hostId).toBe('c');
   });
 
-  it('canJoin: lobby allows new names; playing allows only reconnect', () => {
+  it('canJoin: lobby & ended allow new names; only playing locks new joins', () => {
     const g = mk();
     g.addPlayer('a', 'sa', 'alice');
-    expect(g.canJoin('bob')).toBe(true);
+    expect(g.canJoin('bob')).toBe(true); // lobby → new name ok
     g.start('a');
-    expect(g.canJoin('newbie')).toBe(false);
-    expect(g.canJoin('alice')).toBe(true);
+    expect(g.canJoin('newbie')).toBe(false); // playing → new blocked
+    expect(g.canJoin('alice')).toBe(true); // playing → existing name may reconnect
+    g.eliminate('a'); // solo top-out → game ends
+    expect(g.status).toBe('ended');
+    expect(g.canJoin('newbie')).toBe(true); // ended → new players may join before relaunch
   });
 });
 

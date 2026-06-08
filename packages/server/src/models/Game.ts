@@ -64,9 +64,12 @@ export class Game {
     return p;
   }
 
-  /** A NEW name may join only in the lobby; while playing/ended only an existing name may reconnect. */
+  /**
+   * A NEW name may join while in the lobby OR after a game has ended (between rounds, before the host
+   * relaunches). Only mid-game ('playing') is locked, where an existing name may merely reconnect.
+   */
   canJoin(name: string): boolean {
-    if (this.status === 'lobby') return true;
+    if (this.status !== 'playing') return true;
     return this.findByName(name) !== undefined;
   }
 

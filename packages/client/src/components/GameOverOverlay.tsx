@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { OBJECTIVE_GOAL } from '@shared/constants';
-import type { LeaderboardEntry } from '@shared/protocol';
 import { formatTime } from '../format';
 import { useAppDispatch, useAppSelector } from '../hooks/redux';
-import { socket } from '../socket/socket';
 import { lobbyActions } from '../store/lobbySlice';
 import {
   selectIsHost,
@@ -31,12 +29,12 @@ export const GameOverOverlay = () => {
   const objResult = useAppSelector((s) => s.game.objectiveResult);
   const objective = useAppSelector((s) => s.game.objective);
   const lines = useAppSelector((s) => s.game.lines);
+  const board = useAppSelector((s) => s.lobby.leaderboard);
   const dispatch = useAppDispatch();
-  const [board, setBoard] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
-    socket.emit('leaderboard', (entries) => setBoard(entries));
-  }, []);
+    dispatch(lobbyActions.requestLeaderboard());
+  }, [dispatch]);
 
   const won = winnerId !== null && winnerId === myId;
   const multi = opponents.length > 0;
