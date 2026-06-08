@@ -94,6 +94,20 @@ export class Game {
     return res;
   }
 
+  /**
+   * Soft disconnect WITHOUT eliminating — the socket layer waits a grace window for the player to
+   * reconnect before calling `eliminate()`, so a transient drop (tab throttle, refresh, blip) does
+   * not end the round. Host migrates immediately so control is never stuck on a gone player.
+   */
+  markDisconnected(playerId: string): { migrated: boolean } {
+    const p = this.find(playerId);
+    if (!p) return { migrated: false };
+    p.detachSocket();
+    const wasHost = this.hostId === playerId;
+    if (wasHost) this.electHost();
+    return { migrated: wasHost };
+  }
+
   // ---- host election ---------------------------------------------------
   /** Promote the earliest-joined still-connected player (falls back to first). Idempotent. */
   electHost(): string | null {

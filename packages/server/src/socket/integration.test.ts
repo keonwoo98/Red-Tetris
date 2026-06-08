@@ -186,4 +186,22 @@ describe('socket integration', () => {
     const entries = await new Promise<LeaderboardEntry[]>((resolve) => a.emit('leaderboard', resolve));
     expect(entries[0]).toEqual({ name: 'alice', score: 4200 });
   });
+
+  it('I12: a mid-game disconnect does NOT end the round during the reconnect grace', async () => {
+    const a = connect();
+    await join(a, 'neon', 'alice');
+    const b = connect();
+    await join(b, 'neon', 'bob');
+    const startedB = once<GameStartPayload>(b, 'game:started');
+    await start(a);
+    await startedB;
+
+    let gameOver = false;
+    a.on('game:over', () => {
+      gameOver = true;
+    });
+    b.disconnect(); // transient drop mid-game
+    await wait(700); // well inside the 8s grace window
+    expect(gameOver).toBe(false); // round must NOT have resolved yet
+  });
 });

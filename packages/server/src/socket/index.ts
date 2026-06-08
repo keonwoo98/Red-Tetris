@@ -24,6 +24,10 @@ import { validateName, validateRoom } from './validation.js';
 
 type IO = Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
 type AppSocket = Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>;
+type Evictions = Map<string, ReturnType<typeof setTimeout>>;
+
+/** Grace window after a mid-game disconnect before the player is eliminated (allows reconnect). */
+const RECONNECT_GRACE_MS = 8000;
 
 const fail = (code: ProtocolError['code'], message: string, fatal = false): ProtocolError => ({
   code,
@@ -43,6 +47,7 @@ function handleJoin(
   socket: AppSocket,
   payload: JoinPayload,
   ack: (r: Ack<JoinResult>) => void,
+  evictions: Evictions,
 ): void {
   const room = validateRoom(payload?.room);
   const name = validateName(payload?.name);
@@ -66,6 +71,13 @@ function handleJoin(
   void socket.join(room);
   const player = g.addPlayer(randomUUID(), socket.id, name);
   socket.data = { room, playerId: player.id, name: player.name };
+
+  // reconnected in time → cancel the pending mid-game eviction so the round isn't ended
+  const pending = evictions.get(player.id);
+  if (pending) {
+    clearTimeout(pending);
+    evictions.delete(player.id);
+  }
 
   ack({ ok: true, data: { state: g.serializeRoom(), youId: player.id } });
   io.to(room).emit('room:state', g.serializeRoom());
@@ -161,31 +173,69 @@ function handleTopout(io: IO, registry: RoomManager, socket: AppSocket): void {
   }
 }
 
-function handleExit(io: IO, registry: RoomManager, socket: AppSocket, mode: 'leave' | 'disconnect'): void {
+function handleExit(
+  io: IO,
+  registry: RoomManager,
+  socket: AppSocket,
+  mode: 'leave' | 'disconnect',
+  evictions: Evictions,
+): void {
   const { room, playerId } = socket.data;
   if (!room || !playerId) return;
   const g = registry.find(room);
   if (!g) return;
-
   const prevHost = g.hostId;
-  const res = mode === 'leave' ? g.removePlayer(playerId) : g.handleDisconnect(playerId);
 
-  io.to(room).emit('room:state', g.serializeRoom());
-  if (g.hostId && g.hostId !== prevHost) {
-    io.to(room).emit('host:changed', { hostId: g.hostId, reason: 'migrated' });
-  }
-  if (res.decided && res.reason !== 'not-decided') {
-    io.to(room).emit('game:over', {
-      winnerId: res.winnerId,
-      winnerName: res.winnerName,
-      reason: res.reason,
-    });
-  }
-  registry.removeEmpty(room);
+  // explicit leave (clicked "leave room") → remove immediately and resolve the round
   if (mode === 'leave') {
+    const res = g.removePlayer(playerId);
+    io.to(room).emit('room:state', g.serializeRoom());
+    if (g.hostId && g.hostId !== prevHost) {
+      io.to(room).emit('host:changed', { hostId: g.hostId, reason: 'migrated' });
+    }
+    if (res.decided && res.reason !== 'not-decided') {
+      io.to(room).emit('game:over', {
+        winnerId: res.winnerId,
+        winnerName: res.winnerName,
+        reason: res.reason,
+      });
+    }
+    registry.removeEmpty(room);
     void socket.leave(room);
     socket.data = {};
+    return;
   }
+
+  // unexpected disconnect → keep the slot, migrate host now, but only eliminate after a grace
+  // window so a transient drop (tab throttle, refresh, network blip) does NOT end the round.
+  const { migrated } = g.markDisconnected(playerId);
+  io.to(room).emit('room:state', g.serializeRoom());
+  if (migrated && g.hostId) {
+    io.to(room).emit('host:changed', { hostId: g.hostId, reason: 'migrated' });
+  }
+  if (g.status !== 'playing') {
+    registry.removeEmpty(room);
+    return;
+  }
+  const timer = setTimeout(() => {
+    evictions.delete(playerId);
+    const p = g.find(playerId);
+    if (p && !p.connected && g.status === 'playing') {
+      const res = g.eliminate(playerId);
+      io.to(room).emit('player:gameover', { playerId, name: p.name });
+      if (res.decided && res.reason !== 'not-decided') {
+        io.to(room).emit('game:over', {
+          winnerId: res.winnerId,
+          winnerName: res.winnerName,
+          reason: res.reason,
+        });
+        io.to(room).emit('room:state', g.serializeRoom());
+      }
+    }
+    registry.removeEmpty(room);
+  }, RECONNECT_GRACE_MS);
+  timer.unref?.(); // don't keep the process alive for the grace window (tests)
+  evictions.set(playerId, timer);
 }
 
 function handleScore(socket: AppSocket, store: ScoreStore, p: ScoreReport): void {
@@ -203,8 +253,10 @@ function handleSetMode(io: IO, registry: RoomManager, socket: AppSocket, mode: G
 
 /** Wire all socket.io event handlers. One RoomManager backs all concurrent games. */
 export function registerSocketHandlers(io: IO, registry: RoomManager, store: ScoreStore): void {
+  const evictions: Evictions = new Map(); // pending mid-game disconnect → eviction timers
+
   io.on('connection', (socket) => {
-    socket.on('join', (payload, ack) => handleJoin(io, registry, socket, payload, ack));
+    socket.on('join', (payload, ack) => handleJoin(io, registry, socket, payload, ack, evictions));
     socket.on('start', (ack) => handleStart(io, registry, socket, ack));
     socket.on('restart', (ack) => handleRestart(io, registry, socket, ack));
     socket.on('board:locked', (p) => handleLock(io, registry, socket, p));
@@ -213,7 +265,7 @@ export function registerSocketHandlers(io: IO, registry: RoomManager, store: Sco
     socket.on('score:report', (p) => handleScore(socket, store, p));
     socket.on('leaderboard', (ack: (entries: LeaderboardEntry[]) => void) => ack(store.top(10)));
     socket.on('set-mode', (mode) => handleSetMode(io, registry, socket, mode));
-    socket.on('leave', () => handleExit(io, registry, socket, 'leave'));
-    socket.on('disconnect', () => handleExit(io, registry, socket, 'disconnect'));
+    socket.on('leave', () => handleExit(io, registry, socket, 'leave', evictions));
+    socket.on('disconnect', () => handleExit(io, registry, socket, 'disconnect', evictions));
   });
 }

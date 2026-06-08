@@ -22,7 +22,13 @@ const httpServer = createServer(app);
 
 const io = new Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(
   httpServer,
-  { cors: isDev ? { origin: CLIENT_ORIGIN, methods: ['GET', 'POST'] } : {} },
+  {
+    cors: isDev ? { origin: CLIENT_ORIGIN, methods: ['GET', 'POST'] } : {},
+    // tolerate a briefly-throttled/backgrounded tab: don't drop the socket on a slow heartbeat,
+    // so an unfocused second window doesn't get disconnected (and eliminated) mid-game.
+    pingTimeout: 60000,
+    pingInterval: 25000,
+  },
 );
 
 const scoreStore = FEATURE_PERSISTENCE

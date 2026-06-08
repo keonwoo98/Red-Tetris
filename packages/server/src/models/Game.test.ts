@@ -45,6 +45,19 @@ describe('Game · roster & host', () => {
     expect(g.hostId).toBe('c');
   });
 
+  it('markDisconnected detaches + migrates host but does NOT eliminate (grace for reconnect)', () => {
+    const g = mk();
+    g.addPlayer('a', 'sa', 'alice');
+    g.addPlayer('b', 'sb', 'bob');
+    g.start('a'); // playing
+    const { migrated } = g.markDisconnected('a'); // host drops mid-game
+    expect(migrated).toBe(true);
+    expect(g.hostId).toBe('b'); // host migrated immediately
+    expect(g.find('a')!.connected).toBe(false); // detached
+    expect(g.find('a')!.alive).toBe(true); // NOT eliminated — round continues
+    expect(g.status).toBe('playing');
+  });
+
   it('canJoin: lobby & ended allow new names; only playing locks new joins', () => {
     const g = mk();
     g.addPlayer('a', 'sa', 'alice');
