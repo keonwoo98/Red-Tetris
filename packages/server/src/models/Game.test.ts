@@ -207,13 +207,29 @@ describe('Game · win conditions (no draw)', () => {
     expect(g.winner().reason).toBe('not-decided');
   });
 
-  it('removePlayer mid-game can decide last-standing', () => {
+  it('removePlayer mid-game can decide last-standing and crowns the winner host', () => {
     const g = mk();
-    g.addPlayer('a', 'sa', 'alice');
+    g.addPlayer('a', 'sa', 'alice'); // a = host
     g.addPlayer('b', 'sb', 'bob');
     g.start('a');
-    const res = g.removePlayer('a'); // a leaves → b is last standing
+    const res = g.removePlayer('a'); // host a leaves → b is last standing
     expect(res).toMatchObject({ decided: true, winnerId: 'b', reason: 'last-standing' });
+    expect(g.hostId).toBe('b'); // the winner owns the relaunch (eval: only the top player relaunches)
+  });
+
+  it('crowns the WINNER host on game over, not the original room creator', () => {
+    const g = mk();
+    g.addPlayer('a', 'sa', 'alice'); // a = initial host (created the room)
+    g.addPlayer('b', 'sb', 'bob');
+    g.addPlayer('c', 'sc', 'carol');
+    g.start('a');
+    expect(g.eliminate('a').decided).toBe(false); // host out first; b & c remain → undecided
+    expect(g.hostId).toBe('a'); // not crowned until the game is actually over
+    const res = g.eliminate('b'); // c is the last one standing
+    expect(res).toMatchObject({ decided: true, winnerId: 'c', reason: 'last-standing' });
+    expect(g.hostId).toBe('c'); // winner c — not creator a — now controls the relaunch
+    expect(g.find('c')!.isHost).toBe(true);
+    expect(g.find('a')!.isHost).toBe(false);
   });
 });
 

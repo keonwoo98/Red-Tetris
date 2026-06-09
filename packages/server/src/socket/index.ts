@@ -155,9 +155,14 @@ function handleTopout(io: IO, registry: RoomManager, socket: AppSocket): void {
   const player = g.find(playerId);
   if (g.status !== 'playing' || !player?.alive) return;
 
+  const prevHost = g.hostId;
   const res = g.eliminate(playerId);
   io.to(room).emit('player:gameover', { playerId, name: player.name });
   if (res.decided && res.reason !== 'not-decided') {
+    // the winner is crowned host (see Game.checkWinAfterChange) so they own the relaunch
+    if (g.hostId && g.hostId !== prevHost) {
+      io.to(room).emit('host:changed', { hostId: g.hostId, reason: 'migrated' });
+    }
     io.to(room).emit('game:over', {
       winnerId: res.winnerId,
       winnerName: res.winnerName,
