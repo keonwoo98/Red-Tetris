@@ -208,7 +208,7 @@ Replace the score-ordered `<ol>` (it over-indexes on cosmetic score) with a **su
 - **Hero verdict:** keep `VICTORY`/`DEFEAT`/`GAME OVER` but punch it in; winner gets `#1 LAST PILOT STANDING` + CSS crown (`clip-path` triangle) + gold radial bloom + confetti (reuse §4 win).
 - **Placement rows** (div rows, not table), ordered by `placementOrder` (#1 winner top, then reverse elimination order). Each row: medal chip (`#1` gold / `#2` silver / `#3` bronze gradients), identity-colored avatar, name (YOU = glowing outline), and a **frozen final ghost-field thumbnail** (their last spectrum, dimmed) — beautiful continuity with the in-match panel. Cosmetic stats where known: your `score/lines/level`; rivals → final stack height / placement only.
 - **Reveal:** rows cascade bottom-up (`revealRow` staggered `animation-delay` by rank) so the winner's crowned row lands last.
-- **Buttons:** **PLAY AGAIN** (host → existing `restart`) + **LEAVE**. Non-hosts see "waiting for host…" with the lobby pulse. Closes the loop back to the upgraded lobby.
+- **Buttons:** **PLAY AGAIN** (winner → existing `restart`) + **LEAVE**. Non-winners see "waiting…" with the lobby pulse. Closes the loop back to the upgraded lobby.
 
 **New redux/socket summary:** `gameSlice` += `combo`, `b2b`, extended `clearFx`, `dropFx`, `lastAttack`, `armedAt`; selectors += `selectPendingPenalty/Combo/ClearFx/Armed`. `opponentsSlice` += per-opponent `koSeq/koAt`, module `placementOrder`. `listeners.ts` += forward `fromId/fromName`. Optional **server** additions (flagged): `placement` on `player:gameover`, `playersRemaining` on `game:over`.
 

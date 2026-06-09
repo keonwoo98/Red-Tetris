@@ -37,7 +37,7 @@ grep -rl "socket\.\(on\|emit\)" packages/client/src           # → socket/middl
 |---|---|---|
 | 솔로 실행 (URL이 doc에 충실) | 경로·해시 URL 둘 다 (`HashRedirect`, `hashRoute.ts`) | 두 URL 입력 |
 | 멀티 실행 (첫 명만 시작·진행중 입장불가·1명 남으면 종료) | `Game.start`(host), `JOIN_AFTER_START`, `Game.winner()` | 2 브라우저 |
-| 재시작 (종료 후~재시작 전 신규 입장 가능) | join 게이트 `status !== 'playing'` (`socket/index.ts`) | 끝낸 뒤 3번째 입장 |
+| 재시작 (**우승자**가 재시작·종료 후~재시작 전 신규 입장 가능) | 우승자→host 승격 `Game.checkWinAfterChange`, join 게이트 `status !== 'playing'` | 우승자가 **PLAY AGAIN** |
 | 블록 분배 (동일 시퀀스·좌표) | `pieceAt(seed, i)` 7-bag (`shared/rng.ts`) | 두 화면 NEXT 비교 |
 | 블록 이동 (착지 후 tick 중 이동, 강제낙하 제외) | 입력 4종 + 500ms lock delay (`useGameLoop`) | tuck / T-spin |
 | 라인 주입 (n-1 불멸 하단) | `Game.registerLineClear` → `penalty:apply`, `PENALTY` 행 | 라인클리어 |
@@ -98,6 +98,7 @@ grep -rl "socket\.\(on\|emit\)" packages/client/src           # → socket/middl
 - **"점수 있는데? 스펙은 점수 없음인데"** → 점수는 **보너스**. 승패는 항상 **마지막 생존자**(`Game.winner()`)라 mandatory 규칙은 그대로.
 - **"가비지가 불멸 맞나?"** → `PENALTY` 셀로 하단 추가, 라인 클리어로 안 지워짐. n줄 → n-1.
 - **"호스트 나가면?"** → `Game.electHost()`가 가장 먼저 들어온 연결된 플레이어로 자동 승계.
+- **"재시작은 누가?"** → 게임 종료 시 **우승자가 host로 승격**(`Game.checkWinAfterChange`)되어 **PLAY AGAIN**을 소유. 평가표 *"only the top player of the game can relaunch"* 충족 (방을 만든 사람이 아니라 그 라운드 승자).
 - **"socket을 미들웨어에 캡슐화했나?"** → `socket.on/emit`을 호출하는 파일은 `socket/middleware.ts` 하나뿐(grep으로 증명). 컴포넌트·훅은 Redux 액션만 dispatch.
 - **"비밀/.env는?"** → `.env`는 gitignore, 리포엔 placeholder `.env.example`만. 커밋된 비밀 0.
 - **"커버리지 어떻게 맞췄나?"** → `npm run coverage` → 4지표 모두 임계 초과(91%대).

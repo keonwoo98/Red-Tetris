@@ -21,9 +21,10 @@ supported.
 
 Join via URL: `http://<host>:<port>/<room>/<player_name>` (the path form, per the v5.2 subject).
 The legacy hash form `http://<host>:<port>/#<room>[<player_name>]` is also accepted and forwards to
-the same game. The first player to join a room is the **host** (controls start/restart); if the host
-leaves, the role migrates. New players cannot join mid-round, but **may join again once the game
-ends**, before the host relaunches.
+the same game. The first player to join a room is the **host** and starts the game; if the host
+leaves, the role migrates. When a round ends the **winner is promoted to host** and controls the
+**relaunch** (the eval sheet's "only the top player can relaunch"). New players cannot join mid-round,
+but **may join again once the game ends**, before the next round starts.
 
 ---
 
@@ -98,8 +99,8 @@ ends**, before the host relaunches.
 | Mode | Description |
 |---|---|
 | **Classic** | Default. Constant 1 s gravity (the mandatory behaviour). |
-| **Invisible** | The settled stack and the ghost are **hidden** — only the active piece shows. Memorise your board. |
-| **Rising** | Gravity accelerates with each level (1000 ms, −80 ms per level, floor 120 ms). |
+| **Invisible** | While playing, the settled stack and ghost are **hidden** — only the active piece shows; memorise your board. The full stack is **revealed on game over**. |
+| **Rising** | Gravity drops a big step **every level** (10 lines): **800 → 600 → 400 → 200 → 80 ms** at levels 1–5+ — dramatically faster as you clear. |
 
 ### Solo objectives (host picks the **SOLO GOAL** in a one-player lobby)
 
@@ -125,7 +126,7 @@ you got (e.g. `27 / 40 lines`).
 - **Right**: the NEXT queue and the RIVALS spectrum panels.
 - **Bottom**: a collapsible `CONTROLS` reference.
 - **Game over**: survival standings, a crown + VICTORY + confetti for the winner, **PLAY AGAIN**
-  (host restart), and the leaderboard.
+  (the **winner** relaunches the next round), and the leaderboard.
 
 ### Tips
 
