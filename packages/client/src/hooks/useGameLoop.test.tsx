@@ -62,6 +62,53 @@ describe('useGameLoop lock delay', () => {
     }
   });
 
+  it('keeps locking already-grounded pieces with no input until top-out (idle stall fix)', () => {
+    vi.useFakeTimers();
+    try {
+      // Drive seed-42 idle play up to the first piece that spawns ALREADY grounded (#10): hard-drop
+      // the first 9 pieces, then let #9 settle with gravity (grounded, not yet locked).
+      const store = makeStore();
+      store.dispatch(gameActions.startGame({ seed: 42 }));
+      store.dispatch(gameActions.beginPlay({ startedAtMs: 0 })); // ready = true
+      for (let i = 0; i < 9; i++) store.dispatch(gameActions.hardDrop());
+      expect(store.getState().game.pieceIndex).toBe(9);
+      expect(store.getState().game.status).toBe('playing');
+      groundPiece(store); // gravity-settle #9 without locking it
+
+      renderHook(() => useGameLoop(), { wrapper: wrap(store) });
+      // From here ONLY gravity + the lock-delay timer run — no key input. #9 locks, then #10 spawns
+      // already-grounded: its lock timer must re-arm per piece (pieceIndex) or the board freezes full.
+      for (let i = 0; i < 8 && store.getState().game.status === 'playing'; i++) {
+        act(() => vi.advanceTimersByTime(LOCK_DELAY_MS));
+      }
+      expect(store.getState().game.status).toBe('gameover'); // tops out instead of stalling on #10
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a continuously-rotated grounded piece still locks (no infinite floor-kick spin)', () => {
+    vi.useFakeTimers();
+    try {
+      const store = makeStore();
+      store.dispatch(gameActions.startGame({ seed: 42 }));
+      groundPiece(store); // drop piece #0 to the floor
+      begin(store); // skip the countdown
+      expect(store.getState().game.pieceIndex).toBe(0);
+
+      renderHook(() => useGameLoop(), { wrapper: wrap(store) });
+      // Hold Up: hammer rotate the way OS key-repeat would. Each rotation wall-kicks the piece off the
+      // floor and back, but the move-reset budget must still drain and lock the piece (not stall forever).
+      for (let i = 0; i < 80 && store.getState().game.pieceIndex === 0; i++) {
+        act(() => store.dispatch(gameActions.rotateCW()));
+        act(() => vi.advanceTimersByTime(40)); // ~25 rotations/sec, well under LOCK_DELAY_MS
+      }
+      expect(store.getState().game.pieceIndex).toBe(1); // locked despite the continuous spin
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('a grounded move restarts the lock-delay timer (tuck window)', () => {
     vi.useFakeTimers();
     try {

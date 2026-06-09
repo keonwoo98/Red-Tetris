@@ -1,24 +1,32 @@
 import { describe, it, expect } from 'vitest';
 import { MAX_LOCK_RESETS } from '@shared/constants';
 import { pieceAt } from '@shared/rng';
-import { spawnPiece } from '@shared/tetrominoes';
+import { cellsAt, spawnPiece } from '@shared/tetrominoes';
 import type { Cell } from '@shared/types';
 import reducer, { gameActions, type GameState } from './gameSlice';
 import { createBoard, hardDrop as engineHardDrop } from '../engine';
 
 const init = (): GameState => reducer(undefined, { type: '@@INIT' });
 
-const playing = (over: Partial<GameState> = {}): GameState => ({
-  ...init(),
-  seed: 42,
-  status: 'playing',
-  board: createBoard(),
-  current: spawnPiece(pieceAt(42, 0)),
-  pieceIndex: 0,
-  next: [pieceAt(42, 1)],
-  alive: true,
-  ...over,
-});
+const playing = (over: Partial<GameState> = {}): GameState => {
+  const s: GameState = {
+    ...init(),
+    seed: 42,
+    status: 'playing',
+    board: createBoard(),
+    current: spawnPiece(pieceAt(42, 0)),
+    pieceIndex: 0,
+    next: [pieceAt(42, 1)],
+    alive: true,
+    ...over,
+  };
+  // realistic default: the active piece has already descended to its current depth (spawn/tick set this
+  // in real play), so a move at the same depth bumps the budget instead of reading as a fresh drop.
+  if (s.lowestRow === -Infinity && s.current) {
+    s.lowestRow = Math.max(...cellsAt(s.current).map(([, r]) => r));
+  }
+  return s;
+};
 
 describe('startGame', () => {
   it('initialises a deterministic round from the seed; starts frozen (not ready)', () => {
@@ -68,8 +76,14 @@ describe('movement reducers', () => {
     expect(after.lockResets).toBe(MAX_LOCK_RESETS);
   });
 
-  it('clears the reset budget when a move leaves the piece airborne', () => {
-    expect(reducer(playing({ lockResets: 5 }), gameActions.moveLeft()).lockResets).toBe(0);
+  it('refreshes the reset budget only on a real drop, not a sideways/rotational lift (no spin refund)', () => {
+    const grounded = engineHardDrop(createBoard(), spawnPiece('O')); // O resting on the floor
+    // a grounded shuffle that gains no depth spends a reset — it must NOT refund the budget, or a
+    // floor-kick spin would refresh forever and never lock.
+    expect(reducer(playing({ current: grounded, lockResets: 5 }), gameActions.moveLeft()).lockResets).toBe(6);
+    // a soft drop that reaches a new lowest row DOES clear it (fresh lock delay at the new depth).
+    const falling = playing({ current: spawnPiece('I'), lockResets: 5, lowestRow: 0 });
+    expect(reducer(falling, gameActions.softDrop()).lockResets).toBe(0);
   });
 });
 

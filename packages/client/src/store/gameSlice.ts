@@ -42,6 +42,7 @@ export interface GameState {
   status: 'idle' | 'playing' | 'gameover';
   ready: boolean; // false during the 3-2-1 countdown; input + gravity are gated until "GO"
   lockResets: number; // grounded move/rotate re-arms used since landing; bumps restart the lock timer (anti-stall cap)
+  lowestRow: number; // deepest board row the current piece has reached; the budget only refreshes on a NEW low
   lastWasRotation: boolean; // true if the last successful action was a rotation (for T-spin)
   pendingPenalty: number;
   lockEvent: { board: Board; cleared: number; pieceIndex: number } | null;
@@ -88,6 +89,7 @@ const freshState = (): GameState => ({
   status: 'idle',
   ready: false,
   lockResets: 0,
+  lowestRow: -Infinity,
   lastWasRotation: false,
   pendingPenalty: 0,
   lockEvent: null,
@@ -115,19 +117,28 @@ type Draft = WritableDraft<GameState>;
 
 const playable = (s: Draft): boolean => s.status === 'playing' && s.alive && s.current !== null;
 
+/** The deepest board row the piece currently occupies (its lowest cell). PURE. */
+const pieceBottom = (p: ActivePiece): number =>
+  cellsAt(p).reduce((lo, [, r]) => (r > lo ? r : lo), -Infinity);
+
 /**
- * After a move/rotate, keep the lock-delay timer honest. `lockResets` is what the loop watches:
- * - floated free → reset the budget to 0 (the timer is off while airborne).
- * - still grounded and under the cap → bump it, which restarts the fixed lock-delay timer so the
- *   piece can be tucked or spun into a gap (modern lock-delay feel).
- * - at the cap → leave it unchanged so the timer is NOT restarted and the piece locks on schedule
- *   (anti-stall: you can't wiggle forever).
+ * After a move/rotate/gravity step, keep the lock-delay budget honest. `lockResets` is what the loop
+ * watches; the budget refreshes ONLY on genuine downward progress, never on a sideways/rotational lift:
+ * - reached a NEW lowest row (a real drop) → reset the budget to 0 (fresh lock delay at the new depth).
+ * - grounded shuffle that gained no depth and under the cap → spend one reset (restarts the timer so a
+ *   piece can still be tucked/spun into a gap).
+ * - at the cap → leave it unchanged so the timer is not restarted; spinning in place can't stall forever.
+ *
+ * Resetting on a new low (not merely "airborne") is what kills the infinite floor-kick spin: a rotation
+ * that wall-kicks the piece up does NOT regain a lower row, so it can't refund the budget.
  */
 const reArm = (s: Draft): void => {
   if (!s.current) return;
-  if (!isGrounded(s.board as Board, s.current as ActivePiece)) {
+  const bottom = pieceBottom(s.current as ActivePiece);
+  if (bottom > s.lowestRow) {
+    s.lowestRow = bottom;
     s.lockResets = 0;
-  } else if (s.lockResets < MAX_LOCK_RESETS) {
+  } else if (isGrounded(s.board as Board, s.current as ActivePiece) && s.lockResets < MAX_LOCK_RESETS) {
     s.lockResets += 1;
   }
 };
@@ -236,6 +247,7 @@ const commitLock = (s: Draft): void => {
   }
   s.current = nextPiece;
   s.lockResets = 0;
+  s.lowestRow = pieceBottom(nextPiece);
   s.lastWasRotation = false;
   s.canHold = true; // re-arm hold for the new piece
 };
@@ -261,6 +273,7 @@ const gameSlice = createSlice({
       s.startedAtMs = a.payload.startedAtMs ?? 0;
       s.status = 'playing';
       s.current = spawnPiece(pieceAt(a.payload.seed, 0));
+      s.lowestRow = pieceBottom(s.current as ActivePiece);
       s.next = nextQueue(a.payload.seed, 1, PREVIEW_COUNT);
       if (collides(s.board as Board, s.current as ActivePiece)) topOut(s);
     },
@@ -335,6 +348,7 @@ const gameSlice = createSlice({
       }
       s.canHold = false;
       s.lockResets = 0;
+      s.lowestRow = pieceBottom(s.current as ActivePiece);
       s.lastWasRotation = false;
     },
     // gravity only: fall one row if airborne, otherwise do nothing — locking is the lock-delay
@@ -347,6 +361,7 @@ const gameSlice = createSlice({
         s.current = moved;
         s.lastWasRotation = false; // a natural gravity fall is not a spin lock
         if (s.softDropActive) s.score += SOFT_DROP_POINTS; // soft-drop cells score while held
+        reArm(s); // a real drop refreshes the lock-delay budget at the new depth
       }
     },
     // lock-delay timer expired (or a hard caller wants it): lock only if still resting on the stack.

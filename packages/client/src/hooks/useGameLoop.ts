@@ -3,6 +3,7 @@ import {
   COUNTDOWN_MS,
   GRAVITY_MS,
   LOCK_DELAY_MS,
+  MAX_LOCK_RESETS,
   RISING_GRAVITY_MIN_MS,
   RISING_GRAVITY_STEP_MS,
   SOFT_DROP_MS,
@@ -31,6 +32,7 @@ export const useGameLoop = (): void => {
   const ready = useAppSelector((s) => s.game.ready);
   const grounded = useAppSelector(selectIsGrounded);
   const lockResets = useAppSelector(selectLockResets);
+  const pieceIndex = useAppSelector((s) => s.game.pieceIndex);
   const mode = useAppSelector((s) => s.game.mode);
   const level = useAppSelector((s) => s.game.level);
 
@@ -53,11 +55,15 @@ export const useGameLoop = (): void => {
     return runGravityLoop(interval, () => dispatch(gameActions.tick()));
   }, [status, ready, soft, mode, level, dispatch]);
 
-  // 2. lock delay — (re)armed whenever the piece is grounded; `lockResets` in the deps restarts it
-  // on each grounded move/rotate, so this single timer also implements the tuck/spin window.
+  // 2. lock delay — (re)armed whenever the piece is grounded. `lockResets` restarts it on each
+  // grounded move/rotate (tuck/spin window); `pieceIndex` re-arms it for the NEXT piece even when it
+  // also spawns already-grounded (a full board), so consecutive grounded pieces still lock + top out.
+  // Once the move-reset budget is spent the piece locks on contact (0 delay) — without that, spinning
+  // a piece that floor-kicks off the ground keeps re-grounding and would restart the timer forever.
   useEffect(() => {
     if (status !== 'playing' || !ready || !grounded) return;
-    const id = setTimeout(() => dispatch(gameActions.lockDown()), LOCK_DELAY_MS);
+    const delay = lockResets >= MAX_LOCK_RESETS ? 0 : LOCK_DELAY_MS;
+    const id = setTimeout(() => dispatch(gameActions.lockDown()), delay);
     return () => clearTimeout(id);
-  }, [status, ready, grounded, lockResets, dispatch]);
+  }, [status, ready, grounded, lockResets, pieceIndex, dispatch]);
 };
