@@ -4,8 +4,7 @@ import {
   GRAVITY_MS,
   LOCK_DELAY_MS,
   MAX_LOCK_RESETS,
-  RISING_GRAVITY_MIN_MS,
-  RISING_GRAVITY_STEP_MS,
+  risingGravityMs,
   SOFT_DROP_MS,
 } from '@shared/constants';
 import { runGravityLoop } from '../frp/streams';
@@ -47,10 +46,7 @@ export const useGameLoop = (): void => {
   // 1. gravity (held until "GO")
   useEffect(() => {
     if (status !== 'playing' || !ready) return;
-    const gravity =
-      mode === 'rising'
-        ? Math.max(RISING_GRAVITY_MIN_MS, GRAVITY_MS - (level - 1) * RISING_GRAVITY_STEP_MS)
-        : GRAVITY_MS;
+    const gravity = mode === 'rising' ? risingGravityMs(level) : GRAVITY_MS;
     const interval = soft ? SOFT_DROP_MS : gravity;
     return runGravityLoop(interval, () => dispatch(gameActions.tick()));
   }, [status, ready, soft, mode, level, dispatch]);

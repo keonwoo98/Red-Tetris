@@ -72,9 +72,17 @@ export const OBJECTIVE_GOAL: Record<SoloObjective, number | null> = {
   marathon: MARATHON_LINES,
 };
 
-/** Rising-gravity mode: gravity speeds up every level, clamped. */
-export const RISING_GRAVITY_MIN_MS = 120 as const;
-export const RISING_GRAVITY_STEP_MS = 80 as const;
+/**
+ * Rising-gravity mode: gravity drops a big step EVERY level (10 lines) so the speed-up is dramatic
+ * and obvious — 800 → 600 → 400 → 200 → 80 ms at levels 1..5+, clamped at the floor.
+ */
+export const RISING_GRAVITY_BASE_MS = 800 as const; // level 1 — already faster than classic (1000)
+export const RISING_GRAVITY_STEP_MS = 200 as const; // shaved off per level (every 10 lines)
+export const RISING_GRAVITY_MIN_MS = 80 as const; // fastest gravity (floor), reached at level 5
+
+/** Gravity interval (ms/row) for rising mode at a given level (1-based). PURE. */
+export const risingGravityMs = (level: number): number =>
+  Math.max(RISING_GRAVITY_MIN_MS, RISING_GRAVITY_BASE_MS - (level - 1) * RISING_GRAVITY_STEP_MS);
 
 /** Client build-time feature flags (bonus features are additive; classic play ignores them). */
 export const FEATURES = {
