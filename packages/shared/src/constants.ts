@@ -11,6 +11,7 @@ export const GHOST = 9 as const; // RENDER-ONLY; never in an authoritative Board
 export const GRAVITY_MS = 1000 as const; // constant gravity (mandatory, level 0)
 export const SOFT_DROP_FACTOR = 20 as const;
 export const SOFT_DROP_MS = 50 as const; // GRAVITY_MS / SOFT_DROP_FACTOR
+export const COUNTDOWN_MS = 2100 as const; // 3-2-1 intro: input + gravity are frozen until "GO" appears
 export const LOCK_DELAY_MS = 500 as const; // fixed grounded grace before a piece locks (guideline standard)
 export const MAX_LOCK_RESETS = 15 as const; // moves/rotations that may re-arm the lock delay (anti-stall)
 export const DAS_MS = 130 as const; // delayed auto shift: hold delay before horizontal auto-repeat kicks in

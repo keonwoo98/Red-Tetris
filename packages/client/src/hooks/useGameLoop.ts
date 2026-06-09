@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import {
+  COUNTDOWN_MS,
   GRAVITY_MS,
   LOCK_DELAY_MS,
   RISING_GRAVITY_MIN_MS,
@@ -27,27 +28,36 @@ export const useGameLoop = (): void => {
   const dispatch = useAppDispatch();
   const status = useAppSelector((s) => s.game.status);
   const soft = useAppSelector((s) => s.game.softDropActive);
+  const ready = useAppSelector((s) => s.game.ready);
   const grounded = useAppSelector(selectIsGrounded);
   const lockResets = useAppSelector(selectLockResets);
   const mode = useAppSelector((s) => s.game.mode);
   const level = useAppSelector((s) => s.game.level);
 
-  // 1. gravity
+  // 0. countdown gate: while the 3-2-1 intro plays, the piece is frozen; "GO" (after COUNTDOWN_MS)
+  // unfreezes input + gravity and starts the solo clock.
   useEffect(() => {
-    if (status !== 'playing') return;
+    if (status !== 'playing' || ready) return;
+    const id = setTimeout(() => dispatch(gameActions.beginPlay({ startedAtMs: Date.now() })), COUNTDOWN_MS);
+    return () => clearTimeout(id);
+  }, [status, ready, dispatch]);
+
+  // 1. gravity (held until "GO")
+  useEffect(() => {
+    if (status !== 'playing' || !ready) return;
     const gravity =
       mode === 'rising'
         ? Math.max(RISING_GRAVITY_MIN_MS, GRAVITY_MS - (level - 1) * RISING_GRAVITY_STEP_MS)
         : GRAVITY_MS;
     const interval = soft ? SOFT_DROP_MS : gravity;
     return runGravityLoop(interval, () => dispatch(gameActions.tick()));
-  }, [status, soft, mode, level, dispatch]);
+  }, [status, ready, soft, mode, level, dispatch]);
 
   // 2. lock delay — (re)armed whenever the piece is grounded; `lockResets` in the deps restarts it
   // on each grounded move/rotate, so this single timer also implements the tuck/spin window.
   useEffect(() => {
-    if (status !== 'playing' || !grounded) return;
+    if (status !== 'playing' || !ready || !grounded) return;
     const id = setTimeout(() => dispatch(gameActions.lockDown()), LOCK_DELAY_MS);
     return () => clearTimeout(id);
-  }, [status, grounded, lockResets, dispatch]);
+  }, [status, ready, grounded, lockResets, dispatch]);
 };

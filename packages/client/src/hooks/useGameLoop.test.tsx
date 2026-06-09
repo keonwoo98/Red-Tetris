@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import type { ReactNode } from 'react';
-import { LOCK_DELAY_MS } from '@shared/constants';
+import { COUNTDOWN_MS, LOCK_DELAY_MS } from '@shared/constants';
 import { gameActions } from '../store/gameSlice';
 import { makeStore, type TestStore } from '../components/test-utils';
 import { useGameLoop } from './useGameLoop';
@@ -17,6 +17,31 @@ const groundPiece = (store: TestStore): void => {
   for (let i = 0; i < 40; i++) store.dispatch(gameActions.tick());
 };
 
+/** Skip the countdown for tests that exercise active play. */
+const begin = (store: TestStore): void => {
+  store.dispatch(gameActions.beginPlay({ startedAtMs: 0 }));
+};
+
+describe('useGameLoop countdown gate', () => {
+  it('keeps the piece frozen during 3-2-1, then unfreezes (ready) at "GO"', () => {
+    vi.useFakeTimers();
+    try {
+      const store = makeStore();
+      store.dispatch(gameActions.startGame({ seed: 42 }));
+      renderHook(() => useGameLoop(), { wrapper: wrap(store) });
+
+      act(() => vi.advanceTimersByTime(COUNTDOWN_MS - 100));
+      expect(store.getState().game.ready).toBe(false); // still counting down
+      expect(store.getState().game.current!.y).toBe(store.getState().game.current!.y); // no gravity yet
+
+      act(() => vi.advanceTimersByTime(200)); // past COUNTDOWN_MS → "GO"
+      expect(store.getState().game.ready).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('useGameLoop lock delay', () => {
   it('locks a grounded piece after a fixed LOCK_DELAY_MS, not a gravity interval', () => {
     vi.useFakeTimers();
@@ -24,6 +49,7 @@ describe('useGameLoop lock delay', () => {
       const store = makeStore();
       store.dispatch(gameActions.startGame({ seed: 42 }));
       groundPiece(store);
+      begin(store); // skip the countdown
       expect(store.getState().game.pieceIndex).toBe(0); // grounded, gravity never locks it
 
       renderHook(() => useGameLoop(), { wrapper: wrap(store) });
@@ -42,6 +68,7 @@ describe('useGameLoop lock delay', () => {
       const store = makeStore();
       store.dispatch(gameActions.startGame({ seed: 42 }));
       groundPiece(store);
+      begin(store); // skip the countdown
       renderHook(() => useGameLoop(), { wrapper: wrap(store) });
 
       act(() => vi.advanceTimersByTime(LOCK_DELAY_MS - 100)); // 400ms in

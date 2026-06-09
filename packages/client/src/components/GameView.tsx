@@ -19,6 +19,7 @@ import styles from './GameView.module.css';
 
 export const GameView = () => {
   const status = useAppSelector(selectGameStatus);
+  const ready = useAppSelector((s) => s.game.ready);
   const alive = useAppSelector(selectIsAlive);
   const opponents = useAppSelector(selectOpponents);
   const room = useAppSelector((s) => s.lobby.room);
@@ -26,7 +27,7 @@ export const GameView = () => {
   const navigate = useNavigate();
 
   useGameLoop();
-  useKeyboard(alive && status === 'playing');
+  useKeyboard(ready && alive && status === 'playing'); // no input during the 3-2-1 countdown
   useSoloObjective();
 
   const aliveCount = opponents.filter((o) => o.alive).length + (alive ? 1 : 0);

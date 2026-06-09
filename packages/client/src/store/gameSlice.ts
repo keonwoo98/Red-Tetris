@@ -40,6 +40,7 @@ export interface GameState {
   pieceIndex: number;
   next: PieceType[];
   status: 'idle' | 'playing' | 'gameover';
+  ready: boolean; // false during the 3-2-1 countdown; input + gravity are gated until "GO"
   lockResets: number; // grounded move/rotate re-arms used since landing; bumps restart the lock timer (anti-stall cap)
   lastWasRotation: boolean; // true if the last successful action was a rotation (for T-spin)
   pendingPenalty: number;
@@ -85,6 +86,7 @@ const freshState = (): GameState => ({
   pieceIndex: 0,
   next: [],
   status: 'idle',
+  ready: false,
   lockResets: 0,
   lastWasRotation: false,
   pendingPenalty: 0,
@@ -379,6 +381,12 @@ const gameSlice = createSlice({
     gameOver(s, a: PayloadAction<{ winnerId: string | null }>) {
       s.winnerId = a.payload.winnerId;
       s.status = 'gameover';
+    },
+    // the 3-2-1 countdown finished ("GO") → unfreeze play and (re)start the solo clock from now
+    beginPlay(s, a: PayloadAction<{ startedAtMs: number }>) {
+      if (s.status !== 'playing') return;
+      s.ready = true;
+      s.startedAtMs = a.payload.startedAtMs;
     },
     // solo objective reached (sprint/marathon): end the run as a WIN and record the finishing stats.
     // The outbound middleware reports this like a top-out so the server ends the round + logs the score.

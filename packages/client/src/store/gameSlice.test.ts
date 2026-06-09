@@ -21,13 +21,22 @@ const playing = (over: Partial<GameState> = {}): GameState => ({
 });
 
 describe('startGame', () => {
-  it('initialises a deterministic round from the seed', () => {
+  it('initialises a deterministic round from the seed; starts frozen (not ready)', () => {
     const s = reducer(init(), gameActions.startGame({ seed: 42 }));
     expect(s.status).toBe('playing');
     expect(s.seed).toBe(42);
     expect(s.current).toEqual(spawnPiece(pieceAt(42, 0)));
     expect(s.next).toEqual([1, 2, 3, 4, 5].map((i) => pieceAt(42, i)));
     expect(s.alive).toBe(true);
+    expect(s.ready).toBe(false); // input + gravity gated until the countdown's "GO"
+  });
+
+  it('beginPlay unfreezes play (ready) and restarts the clock; no-op when not playing', () => {
+    const started = reducer(init(), gameActions.startGame({ seed: 1, startedAtMs: 100 }));
+    const live = reducer(started, gameActions.beginPlay({ startedAtMs: 5000 }));
+    expect(live.ready).toBe(true);
+    expect(live.startedAtMs).toBe(5000);
+    expect(reducer(init(), gameActions.beginPlay({ startedAtMs: 1 })).ready).toBe(false);
   });
 });
 
