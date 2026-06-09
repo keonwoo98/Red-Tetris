@@ -22,4 +22,27 @@ describe('<Board>', () => {
     );
     expect(filled.length).toBeGreaterThan(0);
   });
+
+  const filledCount = (container: HTMLElement): number =>
+    [...container.querySelectorAll('[data-cell]')].filter((c) => c.getAttribute('data-cell') !== '0')
+      .length;
+
+  it('invisible mode hides the locked stack while playing, then reveals it on game over', () => {
+    const store = makeStore();
+    store.dispatch(gameActions.startGame({ seed: 42, mode: 'invisible' }));
+    store.dispatch(gameActions.beginPlay({ startedAtMs: 0 }));
+    store.dispatch(gameActions.hardDrop()); // lock a couple of pieces into the stack
+    store.dispatch(gameActions.hardDrop());
+
+    const playing = renderWith(<Board />, store);
+    const hidden = filledCount(playing.container); // stack hidden; at most the active piece shows
+
+    // seed-42 idle hard-drops top out around piece #11
+    while (store.getState().game.status === 'playing') store.dispatch(gameActions.hardDrop());
+    expect(store.getState().game.status).toBe('gameover');
+
+    const over = renderWith(<Board />, store);
+    const revealed = filledCount(over.container);
+    expect(revealed).toBeGreaterThan(hidden); // the final stack is now visible
+  });
 });

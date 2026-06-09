@@ -10,13 +10,16 @@ export const Board = () => {
   const board = useAppSelector((s) => s.game.board);
   const current = useAppSelector((s) => s.game.current);
   const mode = useAppSelector((s) => s.game.mode);
+  const status = useAppSelector((s) => s.game.status);
   const clearFx = useAppSelector(selectClearFx);
   const dropFx = useAppSelector(selectDropFx);
   const lockFx = useAppSelector(selectLockFx);
   const danger = useAppSelector(selectNearTopOut);
   const boardRef = useRef<HTMLDivElement>(null);
 
-  const invisible = mode === 'invisible';
+  // invisible mode hides the locked stack only WHILE PLAYING; once the round ends (top-out) we reveal
+  // the final board so the player can see how it actually stacked up.
+  const invisible = mode === 'invisible' && status === 'playing';
   const shownBoard = invisible ? createBoard() : board;
   const ghost = current && !invisible ? ghostPiece(board, current) : null;
   const grid = overlayForRender(shownBoard, current, ghost);
