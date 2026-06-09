@@ -12,8 +12,9 @@
     "packages/client"
   ],
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev -w packages/server\" \"npm run dev -w packages/client\"",
+    "dev": "npm run build -w packages/shared && concurrently -n shared,server,client -c gray,blue,magenta \"npm run dev -w packages/shared\" \"npm run dev -w packages/server\" \"npm run dev -w packages/client\"",
     "build": "npm run build -w packages/shared && npm run build -w packages/client && npm run build -w packages/server",
+    "postinstall": "npm run build -w packages/shared",
     "start": "node packages/server/dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
