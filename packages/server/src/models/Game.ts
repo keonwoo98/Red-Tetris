@@ -232,22 +232,11 @@ export class Game {
 
   private checkWinAfterChange(): WinResult {
     const res = this.winner();
-    if (res.decided) {
-      this.status = 'ended';
-      // eval sheet: "only the top player of the game can relaunch it" → hand control to the winner so
-      // the relaunch (host-only) belongs to whoever won, not whoever happened to create the room.
-      if (res.winnerId) this.promoteToHost(res.winnerId);
-    }
+    // The host stays the first joiner (subject: "the first player to join becomes the host and
+    // controls when to start or restart"). Winning does NOT transfer control; the host only changes
+    // when the host actually leaves/disconnects (handled by electHost).
+    if (res.decided) this.status = 'ended';
     return res;
-  }
-
-  /** Force a specific player to be the host (idempotent). Used to crown the winner on game over. */
-  private promoteToHost(playerId: string): void {
-    const p = this.find(playerId);
-    if (!p) return;
-    this.players.forEach((pl) => (pl.isHost = false));
-    p.isHost = true;
-    this.hostId = playerId;
   }
 
   // ---- serialization & lookups -----------------------------------------
