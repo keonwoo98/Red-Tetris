@@ -175,5 +175,3 @@ packages/shared   pure, framework-agnostic: tetrominoes, types, protocol, rng, c
 packages/server   OOP authority: models, socket handlers, HTTP static serving
 packages/client   functional SPA: pure engine, Redux store, hooks, components
 ```
-
-See `docs/IMPLEMENTATION_PLAN.md` for the full design and `docs/DESIGN_NOTES.md` for detail.
